@@ -124,3 +124,4 @@ python analyze_video.py --video data/videos/test_01.mp4
 ## 📦 大型檔案備註
 * 依據 GitHub 單檔 100MB 限制規範，原始遊玩影片 (`.mp4`, 800MB+) 不納入 Git 版控。
 * 裁切後的有效 ROI 訓練資料集 (`data/dataset/`) 與完整分析原始碼均已完整包含於本倉庫中。
+
