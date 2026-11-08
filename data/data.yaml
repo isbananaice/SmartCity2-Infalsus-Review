@@ -1,0 +1,11 @@
+# In Falsus YOLOv11 資料集設定檔 (三分類)
+path: ../data/dataset # 資料集根目錄 (相對於訓練執行時之路徑)
+train: images/train   # 訓練集圖片路徑
+val: images/val       # 驗證集圖片路徑
+
+# 三大分類名稱
+names:
+  0: early    # 早按 (偏快, < -25ms)
+  1: perfect  # 大P (命中 ±25ms 區間)
+  2: late     # 晚按 (偏慢, > +25ms)
+

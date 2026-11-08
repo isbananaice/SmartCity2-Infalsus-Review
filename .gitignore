@@ -1,0 +1,31 @@
+# Python 快取與環境
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+venv/
+.env/
+
+# 大型影片檔案 (超過 GitHub 100MB 限制)
+data/videos/
+data/raw/
+*.mp4
+*.mkv
+*.avi
+*.mov
+
+# 暫存測試截圖
+data/inspect_frames/
+
+# YOLO 訓練權重
+runs/
+models/*.pt
+models/*.onnx
+models/*.engine
+*.pt
+
+# 作業系統與 IDE 檔案
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

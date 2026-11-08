@@ -1,0 +1,59 @@
+# In Falsus 復盤系統設定檔
+project:
+  name: "InFalsus-Replay-System"
+  version: "1.1.0"
+
+# 模型設定 (三分類架構: early / perfect / late)
+model:
+  name: "yolov11n"
+  weights_path: "models/yolov11_infalsus_best.pt"
+  conf_threshold: 0.40
+  iou_threshold: 0.45
+  device: "cuda" # 若無 GPU 可設為 "cpu"
+  input_size: 640
+
+# 模型預測類別 (精簡為三類)
+classes:
+  0: "early"    # 早按 (偏快, < -25ms)
+  1: "perfect"  # 大P (完美擊打, -25ms ~ +25ms)
+  2: "late"     # 晚按 (偏慢, > +25ms)
+
+# In Falsus 官方大P判定指標 (毫秒 ms)
+timing_metrics:
+  perfect_window_ms: 25.0 # ±25ms 內為大P
+  display_min_ms: -70.0   # 圖表縱軸下限
+  display_max_ms: 70.0    # 圖表縱軸上限
+
+# 感興趣區域 (ROI) 設定 (以 1920x1080 為基準之相對比例 0.0 ~ 1.0)
+roi:
+  crop:
+    ymin: 0.55
+    ymax: 0.98
+    xmin: 0.05
+    xmax: 0.95
+  
+  # 6 軌按鍵槽位水平相對區間 (在 ROI 寬度內的劃分)
+  lanes:
+    lane_1: [0.00, 0.16] # Shift
+    lane_2: [0.16, 0.32] # Key A
+    lane_3: [0.32, 0.48] # Key S
+    lane_4: [0.48, 0.64] # Key D
+    lane_5: [0.64, 0.80] # Key F
+    lane_6: [0.80, 1.00] # Space
+  
+  # 空中滑軌判定縱向相對範圍 (在 ROI 高度內的劃分)
+  slide_lane:
+    ymin: 0.00
+    ymax: 0.55
+
+# 時序狀態追蹤參數
+tracker:
+  debounce_ms: 80 # 同一軌道判定特效冷卻時間 (毫秒)，防止重複計數
+  fps_default: 60
+
+# 輸出設定
+output:
+  report_dir: "reports"
+  export_charts: true
+  export_html: true
+  export_json: true

@@ -1,0 +1,63 @@
+{
+  "total_notes": 603,
+  "counts": {
+    "early": 103,
+    "perfect": 399,
+    "late": 101
+  },
+  "perfect_rate": 66.17,
+  "mean_offset_ms": 0.0,
+  "std_offset_ms": 21.7,
+  "lane_stats": {
+    "lane_1": {
+      "total": 34,
+      "early": 9,
+      "perfect": 21,
+      "late": 4
+    },
+    "lane_2": {
+      "total": 108,
+      "early": 28,
+      "perfect": 62,
+      "late": 18
+    },
+    "lane_3": {
+      "total": 131,
+      "early": 18,
+      "perfect": 92,
+      "late": 21
+    },
+    "lane_4": {
+      "total": 118,
+      "early": 18,
+      "perfect": 78,
+      "late": 22
+    },
+    "lane_5": {
+      "total": 120,
+      "early": 14,
+      "perfect": 87,
+      "late": 19
+    },
+    "lane_6": {
+      "total": 92,
+      "early": 16,
+      "perfect": 59,
+      "late": 17
+    },
+    "slide": {
+      "total": 0,
+      "early": 0,
+      "perfect": 0,
+      "late": 0
+    }
+  },
+  "video_info": {
+    "path": "demo_gameplay_preview.mp4",
+    "duration_formatted": "02:15",
+    "fps": 60.0,
+    "total_frames": 8100,
+    "width": 1920,
+    "height": 1080
+  }
+}
