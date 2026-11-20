@@ -1,63 +1,89 @@
 {
-  "total_notes": 603,
+  "total_notes": 1854,
   "counts": {
-    "early": 103,
-    "perfect": 399,
-    "late": 101
+    "exact": 1077,
+    "near": 324,
+    "break": 453,
+    "perfect": 1077,
+    "early": 0,
+    "late": 0
   },
-  "perfect_rate": 66.17,
-  "mean_offset_ms": 0.0,
-  "std_offset_ms": 21.7,
+  "perfect_rate": 58.09,
+  "mean_offset_ms": -0.1,
+  "std_offset_ms": 36.1,
   "lane_stats": {
     "lane_1": {
-      "total": 34,
-      "early": 9,
-      "perfect": 21,
-      "late": 4
+      "total": 8,
+      "exact": 0,
+      "near": 8,
+      "break": 0,
+      "perfect": 0,
+      "early": 0,
+      "late": 0
     },
     "lane_2": {
-      "total": 108,
-      "early": 28,
-      "perfect": 62,
-      "late": 18
+      "total": 0,
+      "exact": 0,
+      "near": 0,
+      "break": 0,
+      "perfect": 0,
+      "early": 0,
+      "late": 0
     },
     "lane_3": {
-      "total": 131,
-      "early": 18,
-      "perfect": 92,
-      "late": 21
+      "total": 35,
+      "exact": 35,
+      "near": 0,
+      "break": 0,
+      "perfect": 35,
+      "early": 0,
+      "late": 0
     },
     "lane_4": {
-      "total": 118,
-      "early": 18,
-      "perfect": 78,
-      "late": 22
+      "total": 35,
+      "exact": 0,
+      "near": 35,
+      "break": 0,
+      "perfect": 0,
+      "early": 0,
+      "late": 0
     },
     "lane_5": {
-      "total": 120,
-      "early": 14,
-      "perfect": 87,
-      "late": 19
+      "total": 35,
+      "exact": 0,
+      "near": 35,
+      "break": 0,
+      "perfect": 0,
+      "early": 0,
+      "late": 0
     },
     "lane_6": {
-      "total": 92,
-      "early": 16,
-      "perfect": 59,
-      "late": 17
+      "total": 0,
+      "exact": 0,
+      "near": 0,
+      "break": 0,
+      "perfect": 0,
+      "early": 0,
+      "late": 0
     },
     "slide": {
-      "total": 0,
+      "total": 1741,
+      "exact": 1042,
+      "near": 246,
+      "break": 453,
+      "perfect": 1042,
       "early": 0,
-      "perfect": 0,
       "late": 0
     }
   },
   "video_info": {
-    "path": "demo_gameplay_preview.mp4",
-    "duration_formatted": "02:15",
-    "fps": 60.0,
-    "total_frames": 8100,
+    "path": "data\\videos\\test_02.mp4",
     "width": 1920,
-    "height": 1080
+    "height": 1080,
+    "fps": 60.0,
+    "total_frames": 10692,
+    "duration_sec": 178.2,
+    "duration_formatted": "02:58",
+    "song_start_sec": 7.8
   }
 }

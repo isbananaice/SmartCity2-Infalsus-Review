@@ -14,8 +14,10 @@ data/raw/
 *.avi
 *.mov
 
-# 暫存測試截圖
+# 暫存測試截圖與原始標註包
 data/inspect_frames/
+*coco*
+Infalsus Review-Uploaded.coco/
 
 # YOLO 訓練權重
 runs/

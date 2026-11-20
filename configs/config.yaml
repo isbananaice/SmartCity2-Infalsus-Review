@@ -12,11 +12,11 @@ model:
   device: "cuda" # 若無 GPU 可設為 "cpu"
   input_size: 640
 
-# 模型預測類別 (精簡為三類)
+# 模型預測類別 (對齊實際視覺標籤)
 classes:
-  0: "early"    # 早按 (偏快, < -25ms)
-  1: "perfect"  # 大P (完美擊打, -25ms ~ +25ms)
-  2: "late"     # 晚按 (偏慢, > +25ms)
+  0: "exact"   # 大P (完美擊打, -25ms ~ +25ms)
+  1: "near"    # 偏誤擊打 (偏快/偏慢, ±25ms ~ ±50ms)
+  2: "break"   # 斷連失誤 (> 50ms)
 
 # In Falsus 官方大P判定指標 (毫秒 ms)
 timing_metrics:

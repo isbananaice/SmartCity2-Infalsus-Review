@@ -49,7 +49,10 @@ class ReportGenerator:
         return results
 
     def _generate_html_report(self, video_info: Dict[str, Any], stats: Dict[str, Any], chart_filename: str, output_file: Path):
-        counts = stats.get("counts", {"perfect": 0, "early": 0, "late": 0})
+        counts = stats.get("counts", {})
+        exact_cnt = counts.get("exact", counts.get("perfect", 0))
+        near_cnt = counts.get("near", counts.get("early", 0) + counts.get("late", 0))
+        break_cnt = counts.get("break", 0)
         total = stats.get("total_notes", 0)
         p_rate = stats.get("perfect_rate", 0.0)
         mean_offset = stats.get("mean_offset_ms", 0.0)
@@ -70,17 +73,17 @@ class ReportGenerator:
         for l_key, l_data in lane_stats.items():
             name = lane_display_names.get(l_key, l_key)
             l_tot = l_data.get("total", 0)
-            l_perf = l_data.get("perfect", 0)
-            l_early = l_data.get("early", 0)
-            l_late = l_data.get("late", 0)
+            l_perf = l_data.get("exact", l_data.get("perfect", 0))
+            l_near = l_data.get("near", l_data.get("early", 0) + l_data.get("late", 0))
+            l_break = l_data.get("break", 0)
             l_rate = f"{(l_perf / l_tot * 100):.1f}%" if l_tot > 0 else "-"
             lane_rows += f"""
             <tr>
                 <td><strong>{name}</strong></td>
                 <td>{l_tot}</td>
                 <td style="color:#2ecc71;">{l_perf}</td>
-                <td style="color:#3498db;">{l_early}</td>
-                <td style="color:#e74c3c;">{l_late}</td>
+                <td style="color:#e67e22;">{l_near}</td>
+                <td style="color:#e74c3c;">{l_break}</td>
                 <td><strong>{l_rate}</strong></td>
             </tr>
             """
@@ -206,11 +209,11 @@ class ReportGenerator:
                 <div class="value">{total}</div>
             </div>
             <div class="card">
-                <div class="title">分類計數 (Perfect / Early / Late)</div>
+                <div class="title">分類計數 (Exact / Near / Break)</div>
                 <div class="value" style="font-size: 20px; line-height: 1.4;">
-                    <span style="color:#2ecc71;">P: {counts.get('perfect', 0)}</span> | 
-                    <span style="color:#3498db;">E: {counts.get('early', 0)}</span> | 
-                    <span style="color:#e74c3c;">L: {counts.get('late', 0)}</span>
+                    <span style="color:#2ecc71;">Exact: {exact_cnt}</span> | 
+                    <span style="color:#e67e22;">Near: {near_cnt}</span> | 
+                    <span style="color:#e74c3c;">Break: {break_cnt}</span>
                 </div>
             </div>
             <div class="card">
@@ -233,9 +236,9 @@ class ReportGenerator:
                 <tr>
                     <th>軌道 (Lane)</th>
                     <th>總音符數</th>
-                    <th>Perfect (大P)</th>
-                    <th>Early (早按)</th>
-                    <th>Late (晚按)</th>
+                    <th>Exact (大P)</th>
+                    <th>Near (偏誤)</th>
+                    <th>Break (失誤)</th>
                     <th>大P達成率</th>
                 </tr>
             </thead>

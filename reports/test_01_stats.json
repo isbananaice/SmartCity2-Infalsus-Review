@@ -1,0 +1,89 @@
+{
+  "total_notes": 4213,
+  "counts": {
+    "exact": 3624,
+    "near": 489,
+    "break": 100,
+    "perfect": 3624,
+    "early": 0,
+    "late": 0
+  },
+  "perfect_rate": 86.02,
+  "mean_offset_ms": -0.03,
+  "std_offset_ms": 17.34,
+  "lane_stats": {
+    "lane_1": {
+      "total": 453,
+      "exact": 396,
+      "near": 57,
+      "break": 0,
+      "perfect": 396,
+      "early": 0,
+      "late": 0
+    },
+    "lane_2": {
+      "total": 646,
+      "exact": 568,
+      "near": 70,
+      "break": 8,
+      "perfect": 568,
+      "early": 0,
+      "late": 0
+    },
+    "lane_3": {
+      "total": 806,
+      "exact": 710,
+      "near": 75,
+      "break": 21,
+      "perfect": 710,
+      "early": 0,
+      "late": 0
+    },
+    "lane_4": {
+      "total": 1107,
+      "exact": 947,
+      "near": 136,
+      "break": 24,
+      "perfect": 947,
+      "early": 0,
+      "late": 0
+    },
+    "lane_5": {
+      "total": 708,
+      "exact": 604,
+      "near": 82,
+      "break": 22,
+      "perfect": 604,
+      "early": 0,
+      "late": 0
+    },
+    "lane_6": {
+      "total": 493,
+      "exact": 399,
+      "near": 69,
+      "break": 25,
+      "perfect": 399,
+      "early": 0,
+      "late": 0
+    },
+    "slide": {
+      "total": 0,
+      "exact": 0,
+      "near": 0,
+      "break": 0,
+      "perfect": 0,
+      "early": 0,
+      "late": 0
+    }
+  },
+  "video_info": {
+    "path": "C:\\Users\\USER\\Desktop\\smartcity2\\data\\videos\\test_01.mp4",
+    "width": 1920,
+    "height": 1080,
+    "fps": 60.0,
+    "total_frames": 9471,
+    "duration_sec": 157.85,
+    "duration_formatted": "02:37",
+    "song_start_sec": 3.2
+  }
+}

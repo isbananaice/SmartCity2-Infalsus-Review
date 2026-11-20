@@ -63,13 +63,13 @@ class InFalsusDetector:
                 conf = float(box.conf[0].item())
                 xyxy = [float(x) for x in box.xyxy[0].tolist()]
 
-                # 過濾並正規化至三分類
-                if label in ["0", "early"]:
-                    norm_label = "early"
-                elif label in ["1", "perfect"]:
-                    norm_label = "perfect"
-                elif label in ["2", "late"]:
-                    norm_label = "late"
+                # 過濾並正規化類別
+                if label in ["0", "exact", "perfect"]:
+                    norm_label = "exact"
+                elif label in ["1", "near", "early"]:
+                    norm_label = "near"
+                elif label in ["2", "break", "late"]:
+                    norm_label = "break"
                 else:
                     norm_label = label
 

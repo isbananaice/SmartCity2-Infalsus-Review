@@ -48,13 +48,25 @@ class ReplayVisualizer:
         ax.axhline(0, color="#27ae60", linestyle="--", linewidth=1.2, alpha=0.7)
 
         # 2. 分類繪製散點
+        perfect_df = df[df["category"].isin(["exact", "perfect"])]
+        near_early_df = df[(df["category"] == "near") & (df["offset_ms"] < 0)]
+        near_late_df = df[(df["category"] == "near") & (df["offset_ms"] >= 0)]
+        break_df = df[df["category"] == "break"]
         early_df = df[df["category"] == "early"]
-        perfect_df = df[df["category"] == "perfect"]
         late_df = df[df["category"] == "late"]
 
-        ax.scatter(perfect_df["timestamp"], perfect_df["offset_ms"], c="#27ae60", s=28, alpha=0.65, edgecolors="none", label="Perfect 打擊點")
-        ax.scatter(early_df["timestamp"], early_df["offset_ms"], c="#2980b9", marker="v", s=38, alpha=0.85, edgecolors="black", linewidth=0.5, label="Early 早按點")
-        ax.scatter(late_df["timestamp"], late_df["offset_ms"], c="#c0392b", marker="^", s=38, alpha=0.85, edgecolors="black", linewidth=0.5, label="Late 晚按點")
+        if len(perfect_df) > 0:
+            ax.scatter(perfect_df["timestamp"], perfect_df["offset_ms"], c="#27ae60", s=28, alpha=0.65, edgecolors="none", label="Exact/Perfect (大P)")
+        if len(near_early_df) > 0:
+            ax.scatter(near_early_df["timestamp"], near_early_df["offset_ms"], c="#2980b9", marker="v", s=38, alpha=0.85, edgecolors="black", linewidth=0.5, label="Near Early (偏快)")
+        if len(near_late_df) > 0:
+            ax.scatter(near_late_df["timestamp"], near_late_df["offset_ms"], c="#e67e22", marker="^", s=38, alpha=0.85, edgecolors="black", linewidth=0.5, label="Near Late (偏慢)")
+        if len(break_df) > 0:
+            ax.scatter(break_df["timestamp"], break_df["offset_ms"], c="#c0392b", marker="x", s=50, alpha=0.9, linewidth=1.5, label="Break (斷連/失誤)")
+        if len(early_df) > 0:
+            ax.scatter(early_df["timestamp"], early_df["offset_ms"], c="#2980b9", marker="v", s=38, alpha=0.85, edgecolors="black", linewidth=0.5, label="Early 早按")
+        if len(late_df) > 0:
+            ax.scatter(late_df["timestamp"], late_df["offset_ms"], c="#c0392b", marker="^", s=38, alpha=0.85, edgecolors="black", linewidth=0.5, label="Late 晚按")
 
         # 3. 繪製趨勢平滑折線 (5-Note 滾動平均)
         if len(df) >= 5:
