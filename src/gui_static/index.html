@@ -139,6 +139,48 @@
             <video id="mainVideo" preload="metadata" playsinline></video>
             <div class="video-watermark" id="videoOverlayInfo">
               <span id="currentJudgeBadge" class="overlay-badge">準備就緒</span>
+              
+              <!-- 即時打擊與判定統計面板 (隨著影片播放位置累計增減) -->
+              <div class="live-stats-hud" id="liveStatsHud">
+                <!-- 判定統計: 精準 / 早 / 晚 / 過早 / 過晚 -->
+                <div class="hud-group">
+                  <div class="hud-title">即時判定統計</div>
+                  <div class="hud-row">
+                    <span class="hud-tag exact">精準</span>
+                    <span class="hud-val exact" id="liveExact">0</span>
+                  </div>
+                  <div class="hud-row">
+                    <span class="hud-tag early">早</span>
+                    <span class="hud-val early" id="liveNearEarly">0</span>
+                  </div>
+                  <div class="hud-row">
+                    <span class="hud-tag late">晚</span>
+                    <span class="hud-val late" id="liveNearLate">0</span>
+                  </div>
+                  <div class="hud-row">
+                    <span class="hud-tag break-early">過早</span>
+                    <span class="hud-val break-early" id="liveBreakEarly">0</span>
+                  </div>
+                  <div class="hud-row">
+                    <span class="hud-tag break-late">過晚</span>
+                    <span class="hud-val break-late" id="liveBreakLate">0</span>
+                  </div>
+                </div>
+
+                <!-- 軌道打擊統計: 六軌 + 滑軌 -->
+                <div class="hud-group">
+                  <div class="hud-title">軌道打擊統計</div>
+                  <div class="hud-grid-lanes">
+                    <div class="hud-lane-item"><span class="k">Shift</span><span class="v" id="liveLane1">0</span></div>
+                    <div class="hud-lane-item"><span class="k">A</span><span class="v" id="liveLane2">0</span></div>
+                    <div class="hud-lane-item"><span class="k">S</span><span class="v" id="liveLane3">0</span></div>
+                    <div class="hud-lane-item"><span class="k">D</span><span class="v" id="liveLane4">0</span></div>
+                    <div class="hud-lane-item"><span class="k">F</span><span class="v" id="liveLane5">0</span></div>
+                    <div class="hud-lane-item"><span class="k">Space</span><span class="v" id="liveLane6">0</span></div>
+                    <div class="hud-lane-item wide"><span class="k">Slide 滑軌</span><span class="v" id="liveLaneSlide">0</span></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           

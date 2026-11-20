@@ -89,16 +89,22 @@ def main():
     print("=" * 60)
 
     # 1. 執行畫面中間倒數偵測 (自動校準歌曲真正開始的時間)
-    print("[階段 1/4] 掃描開頭畫面，偵測畫面中間倒數 (3, 2, 1) 與軌道啟動...")
+    print("[階段 1/4] 掃描畫面，自動校準歌曲開始與結尾時刻...")
     cd_detector = CountdownDetector()
     song_start_sec, cd_meta = cd_detector.detect_song_start_time(str(video_path))
     print(f"  => 歌曲正式開始時間: {song_start_sec:.2f} 秒 (判定依據: {cd_meta['method']})")
-    print(f"  => 自動略過前導 {song_start_sec:.2f} 秒的非遊玩畫面，將時序軸歸零對齊")
+
+    from src.ending_detector import EndingDetector
+    end_detector = EndingDetector()
+    song_end_sec, end_meta = end_detector.detect_song_end_time(str(video_path), song_start_sec)
+    print(f"  => 歌曲結束時間: {song_end_sec:.2f} 秒 (遊玩時長: {end_meta.get('song_duration_sec', song_end_sec - song_start_sec):.2f}s | 依據: {end_meta.get('reason')})")
 
     # 2. 初始化影片處理與 ROI
     video_proc = VideoProcessor(str(video_path), roi_config=config.get("roi"))
     video_info = video_proc.get_info()
     video_info["song_start_sec"] = song_start_sec
+    video_info["song_end_sec"] = song_end_sec
+    video_info["song_duration"] = end_meta.get("song_duration_sec", song_end_sec - song_start_sec)
 
     # 3. 初始化 YOLO 偵測器與時序狀態機
     print("\n[階段 2/4] 初始化 YOLOv11 偵測模型與時序狀態機...")
@@ -128,6 +134,10 @@ def main():
     )
 
     for f_idx, video_timestamp, frame, roi in pbar:
+        if video_timestamp >= song_end_sec:
+            print(f"\n[提示] 偵測到結尾 ({end_meta.get('reason', 'CLEARED / FAILED')})，停止後續分析。")
+            break
+
         roi_h, roi_w = roi.shape[:2]
         # 相對於歌曲開始的精確秒數 (使折線圖 00:00 精準對齊第一拍)
         song_time = video_timestamp - song_start_sec

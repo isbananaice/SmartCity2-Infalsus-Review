@@ -110,6 +110,28 @@ class LocalReplayBridge:
             except Exception:
                 events = []
 
+        vinfo = stats.get("video_info", {})
+        song_start = vinfo.get("song_start_sec", 3.0)
+        song_end = vinfo.get("song_end_sec", None)
+        if not song_end:
+            vpath = None
+            for ext in [".mp4", ".mkv", ".avi", ".mov"]:
+                cand = VIDEOS_DIR / f"{video_id}{ext}"
+                if cand.exists():
+                    vpath = cand
+                    break
+            if vpath:
+                from src.ending_detector import EndingDetector
+                end_det = EndingDetector()
+                song_end, end_meta = end_det.detect_song_end_time(str(vpath), song_start)
+                vinfo["song_end_sec"] = song_end
+                vinfo["song_duration"] = end_meta.get("song_duration_sec", song_end - song_start)
+
+        if song_end:
+            song_duration = max(10.0, song_end - song_start)
+            # 濾除結尾結算畫面與 CLEARED / FAILED 動畫產生的誤判
+            events = [e for e in events if e.get("timestamp", 0) <= song_duration]
+
         # 計算滾動平均走勢 (Rolling Mean Offset)
         events.sort(key=lambda x: x["timestamp"])
         t_max = max([e["timestamp"] for e in events]) if events else 120.0
@@ -127,20 +149,51 @@ class LocalReplayBridge:
                 "mean_offset_ms": round(mean_val, 2)
             })
 
-        vinfo = stats.get("video_info", {})
+        # 計算純淨打擊統計 (去除結尾誤判)
+        total_notes = len(events)
+        if total_notes > 0:
+            import numpy as np
+            exact_count = len([e for e in events if e.get("category") == "exact"])
+            near_count = len([e for e in events if e.get("category") == "near"])
+            break_count = len([e for e in events if e.get("category") == "break"])
+            offsets = [e["offset_ms"] for e in events]
+            mean_offset = float(np.mean(offsets))
+            std_offset = float(np.std(offsets))
+            perfect_rate = round((exact_count / total_notes) * 100, 2)
+
+            lane_stats = {}
+            for lane_name in ["lane_1", "lane_2", "lane_3", "lane_4", "lane_5", "lane_6", "slide"]:
+                lane_evs = [e for e in events if e.get("lane") == lane_name]
+                lane_stats[lane_name] = {
+                    "total": len(lane_evs),
+                    "exact": len([e for e in lane_evs if e.get("category") == "exact"]),
+                    "near": len([e for e in lane_evs if e.get("category") == "near"]),
+                    "break": len([e for e in lane_evs if e.get("category") == "break"])
+                }
+
+            clean_stats = {
+                "total_notes": total_notes,
+                "perfect_rate": perfect_rate,
+                "mean_offset_ms": round(mean_offset, 2),
+                "std_offset_ms": round(std_offset, 2),
+                "counts": {
+                    "exact": exact_count,
+                    "near": near_count,
+                    "break": break_count,
+                    "perfect": exact_count
+                },
+                "lane_stats": lane_stats
+            }
+        else:
+            clean_stats = stats.get("stats", {})
+
         return {
             "id": video_id,
             "analyzed": True,
             "video_info": vinfo,
-            "song_start_sec": vinfo.get("song_start_sec", 3.0),
-            "stats": {
-                "total_notes": stats.get("total_notes", len(events)),
-                "perfect_rate": stats.get("perfect_rate", 0),
-                "mean_offset_ms": stats.get("mean_offset_ms", 0),
-                "std_offset_ms": stats.get("std_offset_ms", 0),
-                "counts": stats.get("counts", {}),
-                "lane_stats": stats.get("lane_stats", {})
-            },
+            "song_start_sec": song_start,
+            "song_end_sec": song_end,
+            "stats": clean_stats,
             "rolling_series": rolling_series,
             "events": events
         }
@@ -246,12 +299,19 @@ class LocalReplayBridge:
             cd_detector = CountdownDetector()
             song_start_sec, cd_meta = cd_detector.detect_song_start_time(str(video_path))
             job["song_start_sec"] = song_start_sec
-            job["log"] = f"倒數校準完成：歌曲自 {song_start_sec:.2f}s 開始，正在初始化推論模型..."
+
+            from src.ending_detector import EndingDetector
+            end_detector = EndingDetector()
+            song_end_sec, end_meta = end_detector.detect_song_end_time(str(video_path), song_start_sec)
+
+            job["log"] = f"時序校準完成：歌曲自 {song_start_sec:.2f}s 開始，至 {song_end_sec:.2f}s 結束，正在初始化推論模型..."
             job["progress"] = 15
 
             video_proc = VideoProcessor(str(video_path), roi_config=config.get("roi"))
             video_info = video_proc.get_info()
             video_info["song_start_sec"] = song_start_sec
+            video_info["song_end_sec"] = song_end_sec
+            video_info["song_duration"] = end_meta.get("song_duration_sec", song_end_sec - song_start_sec)
 
             detector = InFalsusDetector(
                 weights_path=weights_path,
@@ -263,13 +323,17 @@ class LocalReplayBridge:
             )
             tracker = ReplayTracker(config)
 
-            total_frames = int((video_proc.total_frames - int(song_start_sec * video_proc.fps)) // step)
+            total_frames = int((min(video_proc.duration, song_end_sec) * video_proc.fps - int(song_start_sec * video_proc.fps)) // step)
             job["total_frames"] = total_frames
             job["processed_frames"] = 0
-            job["log"] = f"開始逐幀分析 (共 {total_frames} 幀)..."
+            job["log"] = f"開始逐幀分析 (遊玩區間共約 {total_frames} 幀)..."
 
             f_count = 0
             for f_idx, t_sec, frame, roi in video_proc.frame_generator(start_sec=song_start_sec, step=step):
+                if t_sec >= song_end_sec:
+                    job["log"] = f"偵測到歌曲結尾 ({end_meta.get('reason', 'CLEARED / FAILED')})，停止後續分析統計。"
+                    break
+
                 rel_time = t_sec - song_start_sec
                 detections = detector.detect_roi(roi)
                 if detections:

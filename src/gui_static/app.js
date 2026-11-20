@@ -78,6 +78,20 @@
     speedBtns: document.querySelectorAll('.btn-speed'),
     stepBtns: document.querySelectorAll('.btn-step'),
 
+    // 即時打擊與判定 HUD (影片右側)
+    liveExact: document.getElementById('liveExact'),
+    liveNearEarly: document.getElementById('liveNearEarly'),
+    liveNearLate: document.getElementById('liveNearLate'),
+    liveBreakEarly: document.getElementById('liveBreakEarly'),
+    liveBreakLate: document.getElementById('liveBreakLate'),
+    liveLane1: document.getElementById('liveLane1'),
+    liveLane2: document.getElementById('liveLane2'),
+    liveLane3: document.getElementById('liveLane3'),
+    liveLane4: document.getElementById('liveLane4'),
+    liveLane5: document.getElementById('liveLane5'),
+    liveLane6: document.getElementById('liveLane6'),
+    liveLaneSlide: document.getElementById('liveLaneSlide'),
+
     // 拖曳調整把手
     handleVideo: document.getElementById('handleVideo'),
     handleMean: document.getElementById('handleMean'),
@@ -397,6 +411,7 @@
     dom.songTimeInfo.textContent = formatTime(songTime, false);
 
     updateCurrentJudgeCallout(songTime);
+    updateLiveHud(songTime);
     drawCharts();
   }
 
@@ -419,6 +434,75 @@
       dom.currentJudgeBadge.textContent = `${hit.lane || 'Key'} | ${cat} (${hit.offset_ms > 0 ? '+' : ''}${hit.offset_ms}ms)`;
       dom.currentJudgeBadge.className = `overlay-badge ${hit.category.toLowerCase()}`;
     }
+  }
+
+  // 即時計算並更新右側 HUD (精準 / 早 / 晚 / 過早 / 過晚 + 六軌與滑軌)
+  // 隨著影片播放位置累計增減，向後跳轉增加，向前跳轉減少
+  function updateLiveHud(songTime) {
+    if (!state.replayData || !state.replayData.events) {
+      clearLiveHud();
+      return;
+    }
+    const events = state.replayData.events;
+
+    let exact = 0, early = 0, late = 0, breakEarly = 0, breakLate = 0;
+    let l1 = 0, l2 = 0, l3 = 0, l4 = 0, l5 = 0, l6 = 0, slide = 0;
+
+    for (let i = 0; i < events.length; i++) {
+      const e = events[i];
+      if (e.timestamp > songTime) break; // events 已由小到大排序
+
+      const off = e.offset_ms;
+      const cat = e.category;
+
+      if (cat === 'exact' || Math.abs(off) <= 25.0) {
+        exact++;
+      } else if (cat === 'near' || (Math.abs(off) > 25.0 && Math.abs(off) <= 45.0)) {
+        if (off < 0) early++;
+        else late++;
+      } else {
+        if (off < 0) breakEarly++;
+        else breakLate++;
+      }
+
+      const lane = e.lane;
+      if (lane === 'lane_1') l1++;
+      else if (lane === 'lane_2') l2++;
+      else if (lane === 'lane_3') l3++;
+      else if (lane === 'lane_4') l4++;
+      else if (lane === 'lane_5') l5++;
+      else if (lane === 'lane_6') l6++;
+      else if (lane === 'slide') slide++;
+    }
+
+    if (dom.liveExact) dom.liveExact.textContent = exact;
+    if (dom.liveNearEarly) dom.liveNearEarly.textContent = early;
+    if (dom.liveNearLate) dom.liveNearLate.textContent = late;
+    if (dom.liveBreakEarly) dom.liveBreakEarly.textContent = breakEarly;
+    if (dom.liveBreakLate) dom.liveBreakLate.textContent = breakLate;
+    if (dom.liveLane1) dom.liveLane1.textContent = l1;
+    if (dom.liveLane2) dom.liveLane2.textContent = l2;
+    if (dom.liveLane3) dom.liveLane3.textContent = l3;
+    if (dom.liveLane4) dom.liveLane4.textContent = l4;
+    if (dom.liveLane5) dom.liveLane5.textContent = l5;
+    if (dom.liveLane6) dom.liveLane6.textContent = l6;
+    if (dom.liveLaneSlide) dom.liveLaneSlide.textContent = slide;
+  }
+  window.updateLiveHud = updateLiveHud;
+
+  function clearLiveHud() {
+    if (dom.liveExact) dom.liveExact.textContent = '0';
+    if (dom.liveNearEarly) dom.liveNearEarly.textContent = '0';
+    if (dom.liveNearLate) dom.liveNearLate.textContent = '0';
+    if (dom.liveBreakEarly) dom.liveBreakEarly.textContent = '0';
+    if (dom.liveBreakLate) dom.liveBreakLate.textContent = '0';
+    if (dom.liveLane1) dom.liveLane1.textContent = '0';
+    if (dom.liveLane2) dom.liveLane2.textContent = '0';
+    if (dom.liveLane3) dom.liveLane3.textContent = '0';
+    if (dom.liveLane4) dom.liveLane4.textContent = '0';
+    if (dom.liveLane5) dom.liveLane5.textContent = '0';
+    if (dom.liveLane6) dom.liveLane6.textContent = '0';
+    if (dom.liveLaneSlide) dom.liveLaneSlide.textContent = '0';
   }
 
   // ==========================================
@@ -826,12 +910,13 @@
       state.songStartSec = data.song_start_sec || 0;
       
       const events = data.events || [];
-      state.songDuration = events.length > 0 ? Math.max(...events.map(e => e.timestamp)) : 120;
+      state.songDuration = (data.video_info && data.video_info.song_duration) || (events.length > 0 ? Math.max(...events.map(e => e.timestamp)) : 120);
 
       updateKpiDisplay(data.stats);
 
       resizeCanvases();
       drawCharts();
+      updateLiveHud(0);
 
     } catch (e) {
       console.error('載入復盤數據失敗:', e);
@@ -880,6 +965,7 @@
     dom.barExact.style.width = '0%';
     dom.barNear.style.width = '0%';
     dom.barBreak.style.width = '0%';
+    clearLiveHud();
   }
 
   // ==========================================
