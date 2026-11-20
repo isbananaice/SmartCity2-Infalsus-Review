@@ -1,6 +1,5 @@
 /**
- * In Falsus AI 復盤診斷系統 GUI 前端核心邏輯
- * 具備 60 FPS 雙圖表同步定位線、精準影片控制、檔案管理與無縫快取套用
+ * In Falsus AI 復盤診斷系統 GUI 前端核心邏輯 (無 emoji、極致緊湊、放大視野)
  */
 
 (function () {
@@ -156,13 +155,13 @@
 
     dom.video.addEventListener('play', () => {
       state.isPlaying = true;
-      dom.btnPlayPause.textContent = '⏸ 暫停';
+      dom.btnPlayPause.textContent = '暫停';
       startSmoothRenderLoop();
     });
 
     dom.video.addEventListener('pause', () => {
       state.isPlaying = false;
-      dom.btnPlayPause.textContent = '▶ 播放';
+      dom.btnPlayPause.textContent = '播放';
       cancelAnimationFrame(state.animFrameId);
       drawCharts();
     });
@@ -247,7 +246,6 @@
   // 顯示即時判定浮水文字
   function updateCurrentJudgeCallout(songTime) {
     if (!state.replayData || !state.replayData.events) return;
-    // 尋找當前時間 ±0.08 秒內的打擊事件
     const events = state.replayData.events;
     const hit = events.find(e => Math.abs(e.timestamp - songTime) <= 0.08);
     if (hit) {
@@ -272,8 +270,8 @@
         if (!state.replayData) return;
         const rect = canvas.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
-        const padLeft = 55;
-        const padRight = 20;
+        const padLeft = 45;
+        const padRight = 15;
         const chartW = rect.width - padLeft - padRight;
         if (clickX >= padLeft && clickX <= rect.width - padRight) {
           const ratio = (clickX - padLeft) / chartW;
@@ -291,10 +289,10 @@
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
 
-      const padLeft = 55;
-      const padRight = 20;
-      const padTop = 15;
-      const padBottom = 25;
+      const padLeft = 45;
+      const padRight = 15;
+      const padTop = 10;
+      const padBottom = 20;
       const chartW = rect.width - padLeft - padRight;
       const chartH = rect.height - padTop - padBottom;
 
@@ -310,7 +308,6 @@
         const ev = events[i];
         if (Math.abs(ev.timestamp - targetTime) > 3.0) continue;
         const px = padLeft + (ev.timestamp / state.songDuration) * chartW;
-        // Y: -75 ~ +75 ms
         const yNorm = (ev.offset_ms - (-75)) / 150.0;
         const py = padTop + chartH - yNorm * chartH;
 
@@ -324,8 +321,8 @@
       if (closest) {
         state.hoveredNote = closest;
         dom.noteHoverTooltip.classList.remove('hidden');
-        dom.noteHoverTooltip.style.left = `${closest.px + 12}px`;
-        dom.noteHoverTooltip.style.top = `${closest.py - 20}px`;
+        dom.noteHoverTooltip.style.left = `${closest.px + 10}px`;
+        dom.noteHoverTooltip.style.top = `${closest.py - 16}px`;
         const sign = closest.ev.offset_ms > 0 ? '+' : '';
         dom.noteHoverTooltip.innerHTML = `
           <strong>[${closest.ev.category.toUpperCase()}]</strong> ${closest.ev.lane || 'Track'}<br>
@@ -383,10 +380,10 @@
 
     ctx.clearRect(0, 0, w, h);
 
-    const padLeft = 55;
-    const padRight = 20;
-    const padTop = 15;
-    const padBottom = 25;
+    const padLeft = 45;
+    const padRight = 15;
+    const padTop = 10;
+    const padBottom = 20;
     const chartW = w - padLeft - padRight;
     const chartH = h - padTop - padBottom;
 
@@ -406,24 +403,24 @@
     // 2. 網格線與 Y 軸刻度
     ctx.strokeStyle = '#1a2438';
     ctx.lineWidth = 1;
-    ctx.font = '10px "JetBrains Mono"';
+    ctx.font = '9px "JetBrains Mono"';
     ctx.fillStyle = '#64748b';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
 
-    [-25, -15, 0, 15, 25].forEach(val => {
+    [-25, 0, 25].forEach(val => {
       const y = getY(val);
       ctx.beginPath();
       ctx.moveTo(padLeft, y);
       ctx.lineTo(w - padRight, y);
       ctx.stroke();
-      ctx.fillText(`${val > 0 ? '+' : ''}${val}ms`, padLeft - 8, y);
+      ctx.fillText(`${val > 0 ? '+' : ''}${val}ms`, padLeft - 6, y);
     });
 
     // 0ms 中心基準線
     const yZero = getY(0);
     ctx.strokeStyle = '#27ae60';
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(padLeft, yZero);
     ctx.lineTo(w - padRight, yZero);
@@ -437,7 +434,7 @@
     const series = state.replayData.rolling_series || [];
     if (series.length > 1) {
       ctx.strokeStyle = '#00f0ff';
-      ctx.lineWidth = 2.2;
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
       series.forEach((pt, idx) => {
         const px = getX(pt.timestamp);
@@ -448,18 +445,18 @@
       ctx.stroke();
     }
 
-    // 4. 垂直時間定位線 (跟隨影片播放時間移動！)
+    // 4. 垂直時間定位線 (跟隨影片播放時間移動)
     if (currentSongTime >= 0 && currentSongTime <= maxT) {
       const cursorX = getX(currentSongTime);
       ctx.strokeStyle = '#ff4757';
-      ctx.lineWidth = 2.0;
+      ctx.lineWidth = 1.8;
       ctx.shadowColor = '#ff4757';
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 6;
       ctx.beginPath();
       ctx.moveTo(cursorX, padTop);
       ctx.lineTo(cursorX, h - padBottom);
       ctx.stroke();
-      ctx.shadowBlur = 0; // 重設光暈
+      ctx.shadowBlur = 0;
 
       // 取得當前滾動平均值
       let curVal = 0;
@@ -483,10 +480,10 @@
 
     ctx.clearRect(0, 0, w, h);
 
-    const padLeft = 55;
-    const padRight = 20;
-    const padTop = 15;
-    const padBottom = 25;
+    const padLeft = 45;
+    const padRight = 15;
+    const padTop = 10;
+    const padBottom = 20;
     const chartW = w - padLeft - padRight;
     const chartH = h - padTop - padBottom;
 
@@ -506,7 +503,7 @@
     // 2. 網格線與 Y 軸刻度
     ctx.strokeStyle = '#1a2438';
     ctx.lineWidth = 1;
-    ctx.font = '10px "JetBrains Mono"';
+    ctx.font = '9px "JetBrains Mono"';
     ctx.fillStyle = '#64748b';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -517,13 +514,13 @@
       ctx.moveTo(padLeft, y);
       ctx.lineTo(w - padRight, y);
       ctx.stroke();
-      ctx.fillText(`${val > 0 ? '+' : ''}${val}ms`, padLeft - 8, y);
+      ctx.fillText(`${val > 0 ? '+' : ''}${val}ms`, padLeft - 6, y);
     });
 
     // 0ms 中心基準線
     const yZero = getY(0);
     ctx.strokeStyle = '#27ae60';
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(padLeft, yZero);
     ctx.lineTo(w - padRight, yZero);
@@ -542,36 +539,33 @@
 
       ctx.fillStyle = getCategoryColor(ev.category);
       if (ev.category === 'break') {
-        // Break 畫菱形
         ctx.beginPath();
-        ctx.moveTo(px, py - 4);
-        ctx.lineTo(px + 4, py);
-        ctx.lineTo(px, py + 4);
-        ctx.lineTo(px - 4, py);
+        ctx.moveTo(px, py - 3.5);
+        ctx.lineTo(px + 3.5, py);
+        ctx.lineTo(px, py + 3.5);
+        ctx.lineTo(px - 3.5, py);
         ctx.closePath();
         ctx.fill();
       } else {
-        // 一般圓點
         ctx.beginPath();
-        ctx.arc(px, py, 2.8, 0, Math.PI * 2);
+        ctx.arc(px, py, 2.4, 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
-    // 4. 垂直時間定位線 (跟隨影片播放時間移動！)
+    // 4. 垂直時間定位線 (跟隨影片播放時間移動)
     if (currentSongTime >= 0 && currentSongTime <= maxT) {
       const cursorX = getX(currentSongTime);
       ctx.strokeStyle = '#ff4757';
-      ctx.lineWidth = 2.0;
+      ctx.lineWidth = 1.8;
       ctx.shadowColor = '#ff4757';
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 6;
       ctx.beginPath();
       ctx.moveTo(cursorX, padTop);
       ctx.lineTo(cursorX, h - padBottom);
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // 尋找當前最接近的音符
       const nearEv = events.find(e => Math.abs(e.timestamp - currentSongTime) <= 0.2);
       if (nearEv) {
         dom.scatterCursorValue.classList.remove('hidden');
@@ -591,16 +585,16 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = '#64748b';
-    ctx.font = '10px "JetBrains Mono"';
+    ctx.font = '9px "JetBrains Mono"';
 
     const stepSec = maxT > 100 ? 15 : 10;
     for (let t = 0; t <= maxT; t += stepSec) {
       const x = padLeft + (t / maxT) * chartW;
       ctx.beginPath();
       ctx.moveTo(x, axisY);
-      ctx.lineTo(x, axisY + 4);
+      ctx.lineTo(x, axisY + 3);
       ctx.stroke();
-      ctx.fillText(formatTime(t, false), x, axisY + 6);
+      ctx.fillText(formatTime(t, false), x, axisY + 4);
     }
   }
 
@@ -622,11 +616,10 @@
       state.videos.forEach(v => {
         const opt = document.createElement('option');
         opt.value = v.id;
-        opt.textContent = `${v.filename} (${v.analyzed ? '🟢 已分析' : '🟡 未分析'})`;
+        opt.textContent = `${v.filename} (${v.analyzed ? '[已分析]' : '[未分析]'})`;
         dom.videoSelect.appendChild(opt);
       });
 
-      // 預設選擇第一個
       selectVideo(state.videos[0].id);
 
       dom.videoSelect.addEventListener('change', () => {
@@ -642,22 +635,19 @@
     state.currentVideoId = videoId;
     const vMeta = state.videos.find(v => v.id === videoId);
 
-    // 更新 Badge
     if (vMeta && vMeta.analyzed) {
-      dom.videoAnalyzedBadge.textContent = '🟢 已載入歷史分析';
+      dom.videoAnalyzedBadge.textContent = '已分析 (直接套用)';
       dom.videoAnalyzedBadge.className = 'badge';
-      dom.btnStartAnalyze.textContent = '⚡ 重新分析';
+      dom.btnStartAnalyze.textContent = '重新分析';
     } else {
-      dom.videoAnalyzedBadge.textContent = '🟡 尚未分析';
+      dom.videoAnalyzedBadge.textContent = '尚未分析';
       dom.videoAnalyzedBadge.className = 'badge pending';
-      dom.btnStartAnalyze.textContent = '⚡ 開始分析';
+      dom.btnStartAnalyze.textContent = '開始分析';
     }
 
-    // 載入影片串流
     dom.video.src = `/api/video_stream/${videoId}`;
     dom.video.load();
 
-    // 載入復盤數據 (若已有分析則直接套用)
     await loadReplayData(videoId);
   }
 
@@ -678,10 +668,8 @@
       const events = data.events || [];
       state.songDuration = events.length > 0 ? Math.max(...events.map(e => e.timestamp)) : 120;
 
-      // 更新側邊欄 KPI
       updateKpiDisplay(data.stats);
 
-      // 重繪圖表
       resizeCanvases();
       drawCharts();
 
@@ -738,13 +726,11 @@
   // 5. 檔案管理與匯入 (支援已分析直接套用)
   // ==========================================
   function setupFileImport() {
-    // 匯入檔案按鈕觸發
     dom.videoFileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (file) await uploadVideoFile(file);
     });
 
-    // 拖曳上傳
     if (dom.fileDropZone) {
       dom.fileDropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -762,11 +748,9 @@
       });
     }
 
-    // 開始分析按鈕
     dom.btnStartAnalyze.addEventListener('click', () => triggerAnalysis(state.currentVideoId));
     dom.btnReanalyze.addEventListener('click', () => triggerAnalysis(state.currentVideoId));
 
-    // 開啟獨立 HTML 報告
     dom.btnOpenHtmlReport.addEventListener('click', () => {
       if (state.currentVideoId) {
         window.open(`/reports/${state.currentVideoId}_report.html`, '_blank');
@@ -809,7 +793,6 @@
       const res = await fetch(`/api/analyze/${videoId}?step=1`, { method: 'POST' });
       const ret = await res.json();
 
-      // 輪詢進度
       const pollTimer = setInterval(async () => {
         const sRes = await fetch(`/api/analyze_status/${videoId}`);
         const status = await sRes.json();
@@ -832,7 +815,6 @@
     }
   }
 
-  // 渲染檔案管理頁面表格
   function renderFilesTable() {
     dom.filesTableBody.innerHTML = '';
     if (state.videos.length === 0) {
@@ -864,7 +846,6 @@
     });
   }
 
-  // 全域外顯函數供 HTML 點擊
   window.guiSelectVideo = (id) => {
     dom.navTabs[0].click();
     dom.videoSelect.value = id;
@@ -889,7 +870,6 @@
     } catch (e) {}
   }
 
-  // 啟動
   window.addEventListener('DOMContentLoaded', init);
 
 })();

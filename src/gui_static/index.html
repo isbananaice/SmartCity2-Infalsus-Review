@@ -13,23 +13,16 @@
   <!-- 最上方選單導覽列 (Top Navigation Header) -->
   <header class="top-nav">
     <div class="brand">
-      <div class="brand-icon">⚡</div>
       <div class="brand-text">
         <span class="brand-title">IN FALSUS</span>
-        <span class="brand-sub">AI REPLAY DIAGNOSTICS</span>
+        <span class="brand-sub">REPLAY DIAGNOSTICS</span>
       </div>
     </div>
 
     <nav class="nav-tabs">
-      <button class="nav-tab active" data-page="page-analyzer">
-        <span class="icon">📊</span> 復盤分析檢視
-      </button>
-      <button class="nav-tab" data-page="page-files">
-        <span class="icon">📁</span> 檔案與專案管理
-      </button>
-      <button class="nav-tab" data-page="page-system">
-        <span class="icon">⚙️</span> 系統與模型診斷
-      </button>
+      <button class="nav-tab active" data-page="page-analyzer">復盤分析檢視</button>
+      <button class="nav-tab" data-page="page-files">檔案管理</button>
+      <button class="nav-tab" data-page="page-system">系統與模型診斷</button>
     </nav>
 
     <div class="top-status">
@@ -54,12 +47,10 @@
 
         <div class="action-buttons">
           <label class="btn btn-secondary btn-upload" title="選擇外部 MP4 檔案匯入">
-            <span>📥 匯入影片</span>
+            <span>匯入影片</span>
             <input type="file" id="videoFileInput" accept=".mp4,.mkv,.avi,.mov" style="display: none;">
           </label>
-          <button id="btnStartAnalyze" class="btn btn-primary" title="執行 YOLOv11 AI 復盤推論">
-            ⚡ 開始分析
-          </button>
+          <button id="btnStartAnalyze" class="btn btn-primary" title="執行 YOLOv11 AI 復盤推論">開始分析</button>
         </div>
         <div id="analyzeProgressContainer" class="progress-container hidden">
           <div class="progress-bar-bg">
@@ -132,20 +123,16 @@
 
       <!-- 快捷工具操作 -->
       <div class="sidebar-section tools-section">
-        <button id="btnOpenHtmlReport" class="btn btn-outline" style="width: 100%; margin-bottom: 8px;">
-          🌐 開啟獨立 HTML 報告
-        </button>
-        <button id="btnReanalyze" class="btn btn-outline danger" style="width: 100%;">
-          🔄 強制重新分析本曲
-        </button>
+        <button id="btnOpenHtmlReport" class="btn btn-outline" style="width: 100%; margin-bottom: 6px;">開啟 HTML 報告</button>
+        <button id="btnReanalyze" class="btn btn-outline danger" style="width: 100%;">重新分析本曲</button>
       </div>
     </aside>
 
     <!-- 主要內容區 (Main Content Area) -->
     <main class="main-content">
-      <!-- 頁面 1: 復盤時序檢視 (第一個頁面: 影片 + 中間平均差幾ms + 最下面各音符差幾ms) -->
+      <!-- 頁面 1: 復盤時序檢視 (影片 + 中間平均差幾ms + 最下面各音符差幾ms) -->
       <section id="page-analyzer" class="page-view active">
-        <!-- 1. 最上面: 影片播放器 (Video Player) -->
+        <!-- 1. 最上面: 影片播放器 (放大視野空間) -->
         <div class="card video-card">
           <div class="video-container">
             <video id="mainVideo" preload="metadata" playsinline></video>
@@ -154,16 +141,16 @@
             </div>
           </div>
           
-          <!-- 音遊專用客製化播放器控制列 -->
+          <!-- 客製化播放器控制列 (緊湊無浪費空間) -->
           <div class="player-controls">
             <div class="control-row-1">
-              <button id="btnPlayPause" class="btn-ctrl-primary">▶ 播放</button>
+              <button id="btnPlayPause" class="btn-ctrl-primary">播放</button>
               
               <div class="step-controls">
                 <button class="btn-step" data-step="-1.0" title="快退 1 秒">-1.0s</button>
                 <button class="btn-step" data-step="-0.1" title="快退 0.1 秒">-0.1s</button>
-                <button class="btn-step" id="btnPrevFrame" title="後退一幀 (1/60s)">◀ 逐格</button>
-                <button class="btn-step" id="btnNextFrame" title="前進一幀 (1/60s)">逐格 ▶</button>
+                <button class="btn-step" id="btnPrevFrame" title="後退一幀 (1/60s)">&lt; 逐格</button>
+                <button class="btn-step" id="btnNextFrame" title="前進一幀 (1/60s)">逐格 &gt;</button>
                 <button class="btn-step" data-step="+0.1" title="快進 0.1 秒">+0.1s</button>
                 <button class="btn-step" data-step="+1.0" title="快進 1 秒">+1.0s</button>
               </div>
@@ -193,14 +180,13 @@
         <div class="card chart-card">
           <div class="chart-header">
             <div class="chart-title">
-              <span class="chart-icon">📈</span>
               <span>樂段手感走勢 (Rolling Mean Offset)</span>
               <span class="chart-axis-info">縱軸: 平均偏差 (ms) | 橫軸: 歌曲時間 (秒)</span>
             </div>
             <div class="chart-legend">
               <span class="legend-item"><span class="legend-box perfect-band"></span> ±25ms 大P區間</span>
               <span class="legend-item"><span class="legend-line center-line"></span> 0ms 完美中心線</span>
-              <span class="legend-item"><span class="legend-line mean-line"></span> 滾動平均偏差趨勢</span>
+              <span class="legend-item"><span class="legend-line mean-line"></span> 滾動平均趨勢</span>
               <span class="legend-item"><span class="legend-line cursor-line"></span> 影片定位線</span>
             </div>
           </div>
@@ -214,7 +200,6 @@
         <div class="card chart-card">
           <div class="chart-header">
             <div class="chart-title">
-              <span class="chart-icon">🎯</span>
               <span>各音符打擊偏差散點圖 (Individual Note Timing)</span>
               <span class="chart-axis-info">縱軸: 該音符差幾 ms (-70ms ~ +70ms) | 橫軸: 歌曲時間 (秒)</span>
             </div>
@@ -260,7 +245,6 @@
           </table>
 
           <div class="drop-zone" id="fileDropZone">
-            <span class="drop-icon">📂</span>
             <span class="drop-text">將 In Falsus 遊玩錄影拖曳至此處自動匯入</span>
             <span class="drop-sub">(若該影片已有分析結果，將自動識別並直接套用)</span>
           </div>
