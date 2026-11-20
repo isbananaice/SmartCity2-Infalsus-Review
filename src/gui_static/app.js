@@ -1,5 +1,10 @@
 /**
- * In Falsus AI 復盤診斷系統 GUI 前端核心邏輯 (無 emoji、極致緊湊、放大視野)
+ * In Falsus AI 復盤診斷系統 GUI 前端核心邏輯
+ * 支援:
+ * 1. 上下滑動拖曳自由調整影片與雙圖表高度 (含雙擊重設與持久化記憶)
+ * 2. 影片隨容器高度等比例動態縮放
+ * 3. 60 FPS 平滑時間定位線同步與雙向跳轉
+ * 4. 檔案管理與直接套用快取
  */
 
 (function () {
@@ -58,6 +63,8 @@
     lane6: document.getElementById('lane6'),
 
     // 播放器
+    videoCard: document.getElementById('videoCard'),
+    videoContainer: document.getElementById('videoContainer'),
     video: document.getElementById('mainVideo'),
     btnPlayPause: document.getElementById('btnPlayPause'),
     btnPrevFrame: document.getElementById('btnPrevFrame'),
@@ -70,7 +77,14 @@
     speedBtns: document.querySelectorAll('.btn-speed'),
     stepBtns: document.querySelectorAll('.btn-step'),
 
-    // 圖表
+    // 拖曳調整把手
+    handleVideo: document.getElementById('handleVideo'),
+    handleMean: document.getElementById('handleMean'),
+    handleScatter: document.getElementById('handleScatter'),
+
+    // 圖表與容器
+    meanCanvasWrapper: document.getElementById('meanCanvasWrapper'),
+    scatterCanvasWrapper: document.getElementById('scatterCanvasWrapper'),
     meanCanvas: document.getElementById('meanChartCanvas'),
     scatterCanvas: document.getElementById('scatterChartCanvas'),
     meanCursorValue: document.getElementById('meanCursorValue'),
@@ -89,6 +103,7 @@
     setupTabNavigation();
     setupVideoControls();
     setupCanvasEvents();
+    setupResizableSections();
     setupFileImport();
     await loadSystemInfo();
     await loadVideoList();
@@ -128,13 +143,92 @@
   }
 
   // ==========================================
-  // 2. 影片播放器與精準同步控制
+  // 2. 上下滑動高度調整 (Resizable Splitters)
+  // ==========================================
+  function setupResizableSections() {
+    // 載入持久化自訂高度
+    const savedVideoH = localStorage.getItem('infalsus_video_h');
+    const savedMeanH = localStorage.getItem('infalsus_mean_h');
+    const savedScatterH = localStorage.getItem('infalsus_scatter_h');
+
+    if (savedVideoH && dom.videoContainer) dom.videoContainer.style.height = `${savedVideoH}px`;
+    if (savedMeanH && dom.meanCanvasWrapper) dom.meanCanvasWrapper.style.height = `${savedMeanH}px`;
+    if (savedScatterH && dom.scatterCanvasWrapper) dom.scatterCanvasWrapper.style.height = `${savedScatterH}px`;
+
+    function makeResizable(handle, targetElem, minH, maxH, storageKey, onResize) {
+      if (!handle || !targetElem) return;
+
+      let startY = 0;
+      let startH = 0;
+      let isDragging = false;
+
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isDragging = true;
+        startY = e.clientY;
+        startH = targetElem.getBoundingClientRect().height;
+        handle.classList.add('active');
+        document.body.style.cursor = 'ns-resize';
+        document.body.style.userSelect = 'none';
+
+        function onMouseMove(e) {
+          if (!isDragging) return;
+          const deltaY = e.clientY - startY;
+          const newH = Math.max(minH, Math.min(maxH, startH + deltaY));
+          targetElem.style.height = `${newH}px`;
+          if (onResize) onResize();
+        }
+
+        function onMouseUp() {
+          if (isDragging) {
+            isDragging = false;
+            handle.classList.remove('active');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            localStorage.setItem(storageKey, Math.round(targetElem.getBoundingClientRect().height));
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            if (onResize) onResize();
+          }
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+
+      // 雙擊把手還原預設
+      handle.addEventListener('dblclick', () => {
+        targetElem.style.height = '';
+        localStorage.removeItem(storageKey);
+        if (onResize) onResize();
+      });
+    }
+
+    // 1. 調整影片高度 (160px ~ 750px)
+    makeResizable(dom.handleVideo, dom.videoContainer, 160, 750, 'infalsus_video_h', () => {
+      resizeCanvases();
+      drawCharts();
+    });
+
+    // 2. 調整中間走勢表格高度 (55px ~ 380px)
+    makeResizable(dom.handleMean, dom.meanCanvasWrapper, 55, 380, 'infalsus_mean_h', () => {
+      resizeCanvases();
+      drawCharts();
+    });
+
+    // 3. 調整最下方音符散點表格高度 (55px ~ 380px)
+    makeResizable(dom.handleScatter, dom.scatterCanvasWrapper, 55, 380, 'infalsus_scatter_h', () => {
+      resizeCanvases();
+      drawCharts();
+    });
+  }
+
+  // ==========================================
+  // 3. 影片播放器與精準同步控制
   // ==========================================
   function setupVideoControls() {
-    // 播放 / 暫停按鈕
     dom.btnPlayPause.addEventListener('click', togglePlayPause);
     
-    // 空白鍵快捷鍵播放/暫停
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
         e.preventDefault();
@@ -142,7 +236,6 @@
       }
     });
 
-    // 影片時間更新事件
     dom.video.addEventListener('timeupdate', onVideoTimeUpdate);
     dom.video.addEventListener('seeking', onVideoTimeUpdate);
     dom.video.addEventListener('seeked', onVideoTimeUpdate);
@@ -166,14 +259,12 @@
       drawCharts();
     });
 
-    // 進度條拖動
     dom.videoSeeker.addEventListener('input', () => {
       const targetTime = parseFloat(dom.videoSeeker.value);
       dom.video.currentTime = targetTime;
       onVideoTimeUpdate();
     });
 
-    // 快進 / 快退步進
     dom.stepBtns.forEach(btn => {
       const stepVal = btn.getAttribute('data-step');
       if (stepVal) {
@@ -184,7 +275,6 @@
       }
     });
 
-    // 單幀步進 (1/60s)
     const frameDuration = 1.0 / 60.0;
     dom.btnPrevFrame.addEventListener('click', () => {
       dom.video.pause();
@@ -195,7 +285,6 @@
       dom.video.currentTime = Math.min(state.videoDuration, dom.video.currentTime + frameDuration);
     });
 
-    // 播放速度切換
     dom.speedBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         dom.speedBtns.forEach(b => b.classList.remove('active'));
@@ -214,25 +303,19 @@
     }
   }
 
-  // 影片時間更新處理
   function onVideoTimeUpdate() {
     const curTime = dom.video.currentTime;
     dom.timeCurrent.textContent = formatTime(curTime);
     dom.videoSeeker.value = curTime;
 
-    // 計算曲內時間
     const songTime = Math.max(0, curTime - state.songStartSec);
     dom.timeSong.textContent = `曲中: ${formatTime(songTime)}`;
     dom.songTimeInfo.textContent = formatTime(songTime, false);
 
-    // 判斷當前音符反饋
     updateCurrentJudgeCallout(songTime);
-
-    // 重繪定位線
     drawCharts();
   }
 
-  // 60 FPS 平滑跟隨繪製循環
   function startSmoothRenderLoop() {
     function loop() {
       if (state.isPlaying) {
@@ -243,7 +326,6 @@
     state.animFrameId = requestAnimationFrame(loop);
   }
 
-  // 顯示即時判定浮水文字
   function updateCurrentJudgeCallout(songTime) {
     if (!state.replayData || !state.replayData.events) return;
     const events = state.replayData.events;
@@ -256,7 +338,7 @@
   }
 
   // ==========================================
-  // 3. 雙圖表 Canvas 高效能繪圖與定位線同步
+  // 4. 雙圖表 Canvas 繪圖與定位線同步
   // ==========================================
   function setupCanvasEvents() {
     window.addEventListener('resize', () => {
@@ -264,7 +346,6 @@
       drawCharts();
     });
 
-    // 點擊圖表任意位置跳轉影片時間 (Seek)
     [dom.meanCanvas, dom.scatterCanvas].forEach(canvas => {
       canvas.addEventListener('click', (e) => {
         if (!state.replayData) return;
@@ -282,7 +363,6 @@
       });
     });
 
-    // 散點圖 Hover 提示
     dom.scatterCanvas.addEventListener('mousemove', (e) => {
       if (!state.replayData || !state.replayData.events) return;
       const rect = dom.scatterCanvas.getBoundingClientRect();
@@ -299,10 +379,9 @@
       const timeRatio = (mouseX - padLeft) / chartW;
       const targetTime = timeRatio * state.songDuration;
 
-      // 尋找距離最近的點
       const events = state.replayData.events;
       let closest = null;
-      let minDis = 15; // 15px 半徑
+      let minDis = 15;
 
       for (let i = 0; i < events.length; i++) {
         const ev = events[i];
@@ -361,16 +440,14 @@
     });
   }
 
-  // 主要繪圖核心 (重繪兩個表格 + 影片定位線)
   function drawCharts() {
     if (!state.replayData) return;
     const currentSongTime = Math.max(0, dom.video.currentTime - state.songStartSec);
-
     drawMeanChart(currentSongTime);
     drawScatterChart(currentSongTime);
   }
 
-  // 繪製中間表格: 滾動平均偏差趨勢 (Rolling Mean Offset)
+  // 繪製中間表格: 滾動平均偏差趨勢
   function drawMeanChart(currentSongTime) {
     const canvas = dom.meanCanvas;
     const ctx = canvas.getContext('2d');
@@ -445,7 +522,7 @@
       ctx.stroke();
     }
 
-    // 4. 垂直時間定位線 (跟隨影片播放時間移動)
+    // 4. 垂直時間定位線
     if (currentSongTime >= 0 && currentSongTime <= maxT) {
       const cursorX = getX(currentSongTime);
       ctx.strokeStyle = '#ff4757';
@@ -458,7 +535,6 @@
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // 取得當前滾動平均值
       let curVal = 0;
       const pt = series.find(p => Math.abs(p.timestamp - currentSongTime) <= 0.6);
       if (pt) curVal = pt.mean_offset_ms;
@@ -470,7 +546,7 @@
     }
   }
 
-  // 繪製最下面表格: 各音符偏差散點圖 (Individual Note Timing Scatter)
+  // 繪製最下面表格: 各音符偏差散點圖
   function drawScatterChart(currentSongTime) {
     const canvas = dom.scatterCanvas;
     const ctx = canvas.getContext('2d');
@@ -553,7 +629,7 @@
       }
     }
 
-    // 4. 垂直時間定位線 (跟隨影片播放時間移動)
+    // 4. 垂直時間定位線
     if (currentSongTime >= 0 && currentSongTime <= maxT) {
       const cursorX = getX(currentSongTime);
       ctx.strokeStyle = '#ff4757';
@@ -599,7 +675,7 @@
   }
 
   // ==========================================
-  // 4. 資料載入與切換 (直接套用既有分析)
+  // 5. 資料載入與切換 (直接套用既有分析)
   // ==========================================
   async function loadVideoList() {
     try {
@@ -723,7 +799,7 @@
   }
 
   // ==========================================
-  // 5. 檔案管理與匯入 (支援已分析直接套用)
+  // 6. 檔案管理與匯入 (支援已分析直接套用)
   // ==========================================
   function setupFileImport() {
     dom.videoFileInput.addEventListener('change', async (e) => {

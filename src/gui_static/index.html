@@ -130,18 +130,18 @@
 
     <!-- 主要內容區 (Main Content Area) -->
     <main class="main-content">
-      <!-- 頁面 1: 復盤時序檢視 (影片 + 中間平均差幾ms + 最下面各音符差幾ms) -->
+      <!-- 頁面 1: 復盤時序檢視 (可上下拖曳自訂高度之三段佈局) -->
       <section id="page-analyzer" class="page-view active">
-        <!-- 1. 最上面: 影片播放器 (放大視野空間) -->
-        <div class="card video-card">
-          <div class="video-container">
+        <!-- 1. 最上面: 影片播放器 -->
+        <div class="card video-card" id="videoCard">
+          <div class="video-container" id="videoContainer">
             <video id="mainVideo" preload="metadata" playsinline></video>
             <div class="video-watermark" id="videoOverlayInfo">
               <span id="currentJudgeBadge" class="overlay-badge">準備就緒</span>
             </div>
           </div>
           
-          <!-- 客製化播放器控制列 (緊湊無浪費空間) -->
+          <!-- 客製化播放器控制列 -->
           <div class="player-controls">
             <div class="control-row-1">
               <button id="btnPlayPause" class="btn-ctrl-primary">播放</button>
@@ -176,8 +176,13 @@
           </div>
         </div>
 
-        <!-- 2. 中間: 縱軸為平均差幾 ms，橫軸為時間軸的表格 (Rolling Mean Timing Offset) -->
-        <div class="card chart-card">
+        <!-- 影片高度調整把手 -->
+        <div class="resize-handle" id="handleVideo" title="上下拖曳以調整影片高度 (雙擊還原預設)">
+          <div class="handle-bar"></div>
+        </div>
+
+        <!-- 2. 中間: 縱軸為平均差幾 ms 表格 -->
+        <div class="card chart-card" id="meanChartCard">
           <div class="chart-header">
             <div class="chart-title">
               <span>樂段手感走勢 (Rolling Mean Offset)</span>
@@ -190,14 +195,19 @@
               <span class="legend-item"><span class="legend-line cursor-line"></span> 影片定位線</span>
             </div>
           </div>
-          <div class="canvas-wrapper">
+          <div class="canvas-wrapper" id="meanCanvasWrapper">
             <canvas id="meanChartCanvas"></canvas>
             <div id="meanCursorValue" class="cursor-value-tooltip hidden">0.0 ms</div>
           </div>
         </div>
 
-        <!-- 3. 最下面: 縱軸為該音符差幾 ms，橫軸為時間軸的表格 (Individual Note Timing Offset Scatter) -->
-        <div class="card chart-card">
+        <!-- 中間表格高度調整把手 -->
+        <div class="resize-handle" id="handleMean" title="上下拖曳以調整平均走勢表格高度 (雙擊還原預設)">
+          <div class="handle-bar"></div>
+        </div>
+
+        <!-- 3. 最下面: 縱軸為該音符差幾 ms 表格 -->
+        <div class="card chart-card" id="scatterChartCard">
           <div class="chart-header">
             <div class="chart-title">
               <span>各音符打擊偏差散點圖 (Individual Note Timing)</span>
@@ -211,11 +221,16 @@
               <span class="legend-item"><span class="legend-line cursor-line"></span> 影片定位線</span>
             </div>
           </div>
-          <div class="canvas-wrapper">
+          <div class="canvas-wrapper" id="scatterCanvasWrapper">
             <canvas id="scatterChartCanvas"></canvas>
             <div id="scatterCursorValue" class="cursor-value-tooltip hidden">0.0 ms</div>
             <div id="noteHoverTooltip" class="note-tooltip hidden"></div>
           </div>
+        </div>
+
+        <!-- 最下表格高度調整把手 -->
+        <div class="resize-handle" id="handleScatter" title="上下拖曳以調整音符散點表格高度 (雙擊還原預設)">
+          <div class="handle-bar"></div>
         </div>
       </section>
 
