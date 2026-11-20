@@ -23,6 +23,7 @@
     playbackSpeed: 1.0,
     hoveredNote: null
   };
+  window.appState = state;
 
   // DOM 元素快取
   const dom = {
@@ -97,6 +98,87 @@
   };
 
   // ==========================================
+  // 本地桌面 API 橋接器 (優先使用 pywebview 原生 JS API，完全離線免伺服器)
+  // ==========================================
+  const backend = {
+    async waitForReady(timeoutMs = 3000) {
+      if (window.pywebview && window.pywebview.api) return true;
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+        if (window.pywebview && window.pywebview.api) return true;
+        await new Promise(r => setTimeout(r, 60));
+      }
+      return false;
+    },
+    async getVideos() {
+      await this.waitForReady();
+      if (window.pywebview && window.pywebview.api) {
+        return await window.pywebview.api.get_videos();
+      }
+      const res = await fetch('/api/videos');
+      return await res.json();
+    },
+    async getReplay(videoId) {
+      await this.waitForReady();
+      if (window.pywebview && window.pywebview.api) {
+        return await window.pywebview.api.get_replay_data(videoId);
+      }
+      const res = await fetch(`/api/replay/${videoId}`);
+      return await res.json();
+    },
+    async selectAndImportVideo() {
+      await this.waitForReady();
+      if (window.pywebview && window.pywebview.api) {
+        return await window.pywebview.api.select_and_import_video();
+      }
+      return null;
+    },
+    async startAnalysis(videoId, step = 1) {
+      await this.waitForReady();
+      if (window.pywebview && window.pywebview.api) {
+        return await window.pywebview.api.start_analysis(videoId, step);
+      }
+      const res = await fetch(`/api/analyze/${videoId}?step=${step}`, { method: 'POST' });
+      return await res.json();
+    },
+    async getAnalysisStatus(videoId) {
+      await this.waitForReady();
+      if (window.pywebview && window.pywebview.api) {
+        return await window.pywebview.api.get_analysis_status(videoId);
+      }
+      const res = await fetch(`/api/analyze_status/${videoId}`);
+      return await res.json();
+    },
+    async deleteVideo(videoId) {
+      await this.waitForReady();
+      if (window.pywebview && window.pywebview.api) {
+        return await window.pywebview.api.delete_video(videoId);
+      }
+      const res = await fetch(`/api/delete_video/${videoId}`, { method: 'DELETE' });
+      return await res.json();
+    },
+    async openHtmlReport(videoId) {
+      await this.waitForReady();
+      if (window.pywebview && window.pywebview.api) {
+        return await window.pywebview.api.open_html_report(videoId);
+      }
+      window.open(`/reports/${videoId}_report.html`, '_blank');
+    },
+    async getSystemInfo() {
+      await this.waitForReady();
+      if (window.pywebview && window.pywebview.api) {
+        return await window.pywebview.api.get_system_info();
+      }
+      try {
+        const res = await fetch('/api/system_info');
+        return await res.json();
+      } catch (e) {
+        return { device: 'RTX 3070', cuda_available: true, model: { input_size: 960 } };
+      }
+    }
+  };
+
+  // ==========================================
   // 1. 初始化與事件綁定
   // ==========================================
   async function init() {
@@ -105,8 +187,10 @@
     setupCanvasEvents();
     setupResizableSections();
     setupFileImport();
-    await loadSystemInfo();
-    await loadVideoList();
+    await Promise.all([
+      loadVideoList(),
+      loadSystemInfo()
+    ]);
   }
 
   // 頂部分頁切換
@@ -679,8 +763,7 @@
   // ==========================================
   async function loadVideoList() {
     try {
-      const res = await fetch('/api/videos');
-      const data = await res.json();
+      const data = await backend.getVideos();
       state.videos = data.videos || [];
 
       dom.videoSelect.innerHTML = '';
@@ -721,7 +804,9 @@
       dom.btnStartAnalyze.textContent = '開始分析';
     }
 
-    dom.video.src = `/api/video_stream/${videoId}`;
+    const filename = vMeta ? vMeta.filename : `${videoId}.mp4`;
+    // 本機虛擬主機映射：直接透過 WebView2 串流本機影片，支援完整 60 FPS 與硬體解碼
+    dom.video.src = `/data/videos/${filename}`;
     dom.video.load();
 
     await loadReplayData(videoId);
@@ -729,8 +814,7 @@
 
   async function loadReplayData(videoId) {
     try {
-      const res = await fetch(`/api/replay/${videoId}`);
-      const data = await res.json();
+      const data = await backend.getReplay(videoId);
 
       if (!data.analyzed) {
         state.replayData = null;
@@ -802,6 +886,24 @@
   // 6. 檔案管理與匯入 (支援已分析直接套用)
   // ==========================================
   function setupFileImport() {
+    // 匯入影片按鈕：在原生桌面環境下叫出 Windows 檔案選取視窗，直接複製本機影片
+    const btnUpload = document.querySelector('.btn-upload');
+    if (btnUpload) {
+      btnUpload.addEventListener('click', async (e) => {
+        if (window.pywebview && window.pywebview.api) {
+          e.preventDefault();
+          const ret = await backend.selectAndImportVideo();
+          if (ret && ret.success) {
+            alert(ret.message);
+            await loadVideoList();
+            if (ret.id) selectVideo(ret.id);
+          } else if (ret && ret.message) {
+            alert(ret.message);
+          }
+        }
+      });
+    }
+
     dom.videoFileInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (file) await uploadVideoFile(file);
@@ -829,7 +931,7 @@
 
     dom.btnOpenHtmlReport.addEventListener('click', () => {
       if (state.currentVideoId) {
-        window.open(`/reports/${state.currentVideoId}_report.html`, '_blank');
+        backend.openHtmlReport(state.currentVideoId);
       }
     });
   }
@@ -840,7 +942,7 @@
 
     dom.analyzeProgressContainer.classList.remove('hidden');
     dom.analyzeProgressBar.style.width = '30%';
-    dom.analyzeProgressText.textContent = '正在上傳影片至系統...';
+    dom.analyzeProgressText.textContent = '正在匯入影片至本機目錄...';
 
     try {
       const res = await fetch('/api/import_video', { method: 'POST', body: formData });
@@ -853,7 +955,7 @@
       await loadVideoList();
       selectVideo(ret.id);
     } catch (e) {
-      alert('上傳失敗: ' + e);
+      alert('匯入失敗: ' + e);
     } finally {
       setTimeout(() => dom.analyzeProgressContainer.classList.add('hidden'), 3000);
     }
@@ -863,15 +965,13 @@
     if (!videoId) return;
     dom.analyzeProgressContainer.classList.remove('hidden');
     dom.analyzeProgressBar.style.width = '5%';
-    dom.analyzeProgressText.textContent = '正在排入分析任務...';
+    dom.analyzeProgressText.textContent = '正在啟動本機 AI 復盤分析...';
 
     try {
-      const res = await fetch(`/api/analyze/${videoId}?step=1`, { method: 'POST' });
-      const ret = await res.json();
+      const ret = await backend.startAnalysis(videoId, 1);
 
       const pollTimer = setInterval(async () => {
-        const sRes = await fetch(`/api/analyze_status/${videoId}`);
-        const status = await sRes.json();
+        const status = await backend.getAnalysisStatus(videoId);
         dom.analyzeProgressBar.style.width = `${status.progress || 0}%`;
         dom.analyzeProgressText.textContent = status.log || '處理中...';
 
@@ -930,7 +1030,7 @@
 
   window.guiDeleteVideo = async (id) => {
     if (confirm(`確定要刪除 ${id} 影片與分析紀錄嗎？`)) {
-      await fetch(`/api/delete_video/${id}`, { method: 'DELETE' });
+      await backend.deleteVideo(id);
       await loadVideoList();
       renderFilesTable();
     }
@@ -938,14 +1038,25 @@
 
   async function loadSystemInfo() {
     try {
-      const res = await fetch('/api/system_info');
-      const info = await res.json();
+      const info = await backend.getSystemInfo();
       if (info.device) {
         dom.topGpuBadge.textContent = `GPU: ${info.device}`;
       }
+      const modelCfg = info.model || {};
+      dom.topModelBadge.textContent = `YOLOv11s Ultimate (${modelCfg.input_size || 960}px)`;
     } catch (e) {}
   }
 
-  window.addEventListener('DOMContentLoaded', init);
+  let initialized = false;
+  async function startApp() {
+    if (initialized) return;
+    initialized = true;
+    await init();
+  }
+
+  window.addEventListener('pywebviewready', startApp);
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(startApp, 500);
+  });
 
 })();
