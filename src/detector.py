@@ -8,14 +8,25 @@ class InFalsusDetector:
     支援:
     1. 載入 Ultralytics YOLO 模型 (.pt 權重)
     2. 自動判斷 GPU (CUDA) / CPU 模式
-    3. ROI 影像批次/單張推論
+    3. ROI 影像批次/單張推論 (支援自訂 imgsz 與 TTA 測試時增強)
     4. 當尚未訓練好權重時，提供 Mock/模擬模式以利端到端流程驗證
     """
 
-    def __init__(self, weights_path: Optional[str] = None, conf_threshold: float = 0.4, device: str = "auto"):
+    def __init__(
+        self,
+        weights_path: Optional[str] = None,
+        conf_threshold: float = 0.55,
+        iou_threshold: float = 0.45,
+        device: str = "auto",
+        imgsz: int = 960,
+        augment: bool = False
+    ):
         self.weights_path = weights_path
         self.conf_threshold = conf_threshold
+        self.iou_threshold = iou_threshold
         self.device = device
+        self.imgsz = imgsz
+        self.augment = augment
         self.model = None
         self.is_mock = False
 
@@ -27,7 +38,7 @@ class InFalsusDetector:
                 if device == "auto":
                     self.device = "cuda" if torch.cuda.is_available() else "cpu"
                 
-                print(f"[Detector] 正在載入模型: {weights_path} (裝置: {self.device})")
+                print(f"[Detector] 正在載入模型: {weights_path} (裝置: {self.device}, imgsz: {self.imgsz}, conf: {self.conf_threshold})")
                 self.model = YOLO(weights_path)
             except Exception as e:
                 print(f"[Detector 警告] 載入模型失敗 ({e})，切換至模擬推論模式")
@@ -46,10 +57,13 @@ class InFalsusDetector:
             # 模擬模式：回傳隨機或空偵測 (測試用)
             return self._mock_detect(roi_image)
 
-        # 呼叫 YOLOv11 推論
+        # 呼叫 YOLOv11 推論 (支援 imgsz 與可選 augment)
         results = self.model.predict(
             source=roi_image,
             conf=self.conf_threshold,
+            iou=self.iou_threshold,
+            imgsz=self.imgsz,
+            augment=self.augment,
             device=self.device,
             verbose=False
         )

@@ -57,6 +57,7 @@ def analyze_single_video(video_path: Path, output_prefix: str, config: dict, det
     # 自訂產出路徑
     chart_path = ROOT_DIR / "reports" / f"{output_prefix}_timeline.png"
     json_path = ROOT_DIR / "reports" / f"{output_prefix}_stats.json"
+    events_path = ROOT_DIR / "reports" / f"{output_prefix}_events.json"
     html_path = ROOT_DIR / "reports" / f"{output_prefix}_report.html"
 
     report_gen.visualizer.plot_timing_timeline(
@@ -64,6 +65,10 @@ def analyze_single_video(video_path: Path, output_prefix: str, config: dict, det
         output_path=str(chart_path),
         title=f"In Falsus 全曲時序折線散點圖 - {video_path.stem}"
     )
+
+    # 儲存 events.json 供 GUI 前端載入繪製雙圖表
+    with open(events_path, "w", encoding="utf-8") as f:
+        json.dump(stats.get("events", []), f, ensure_ascii=False)
 
     export_stats = {k: v for k, v in stats.items() if k != "events"}
     export_stats["video_info"] = video_info

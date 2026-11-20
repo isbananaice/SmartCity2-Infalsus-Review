@@ -87,8 +87,8 @@
     scatterCanvasWrapper: document.getElementById('scatterCanvasWrapper'),
     meanCanvas: document.getElementById('meanChartCanvas'),
     scatterCanvas: document.getElementById('scatterChartCanvas'),
-    meanCursorValue: document.getElementById('meanCursorValue'),
-    scatterCursorValue: document.getElementById('scatterCursorValue'),
+    meanLiveBadge: document.getElementById('meanLiveBadge'),
+    scatterLiveBadge: document.getElementById('scatterLiveBadge'),
     noteHoverTooltip: document.getElementById('noteHoverTooltip'),
 
     // 檔案頁面
@@ -538,11 +538,12 @@
       let curVal = 0;
       const pt = series.find(p => Math.abs(p.timestamp - currentSongTime) <= 0.6);
       if (pt) curVal = pt.mean_offset_ms;
-      dom.meanCursorValue.classList.remove('hidden');
-      dom.meanCursorValue.style.left = `${cursorX}px`;
-      dom.meanCursorValue.textContent = `${curVal > 0 ? '+' : ''}${curVal.toFixed(1)} ms`;
+      if (dom.meanLiveBadge) {
+        dom.meanLiveBadge.classList.remove('hidden');
+        dom.meanLiveBadge.textContent = `定位偏差: ${curVal > 0 ? '+' : ''}${curVal.toFixed(1)} ms`;
+      }
     } else {
-      dom.meanCursorValue.classList.add('hidden');
+      if (dom.meanLiveBadge) dom.meanLiveBadge.classList.add('hidden');
     }
   }
 
@@ -643,16 +644,15 @@
       ctx.shadowBlur = 0;
 
       const nearEv = events.find(e => Math.abs(e.timestamp - currentSongTime) <= 0.2);
-      if (nearEv) {
-        dom.scatterCursorValue.classList.remove('hidden');
-        dom.scatterCursorValue.style.left = `${cursorX}px`;
+      if (nearEv && dom.scatterLiveBadge) {
+        dom.scatterLiveBadge.classList.remove('hidden');
         const sign = nearEv.offset_ms > 0 ? '+' : '';
-        dom.scatterCursorValue.textContent = `${nearEv.lane || 'Key'}: ${sign}${nearEv.offset_ms}ms`;
-      } else {
-        dom.scatterCursorValue.classList.add('hidden');
+        dom.scatterLiveBadge.textContent = `定位音符: ${nearEv.lane || 'Key'} (${sign}${nearEv.offset_ms}ms)`;
+      } else if (dom.scatterLiveBadge) {
+        dom.scatterLiveBadge.classList.add('hidden');
       }
     } else {
-      dom.scatterCursorValue.classList.add('hidden');
+      if (dom.scatterLiveBadge) dom.scatterLiveBadge.classList.add('hidden');
     }
   }
 

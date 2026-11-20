@@ -7,7 +7,7 @@ project:
 model:
   name: "yolov11s"
   weights_path: "models/yolov11s_infalsus_ultimate.pt"
-  conf_threshold: 0.55
+  conf_threshold: 0.30
   iou_threshold: 0.45
   device: "cuda" # 若無 GPU 可設為 "cpu"
   input_size: 960
@@ -47,10 +47,19 @@ roi:
     ymin: 0.00
     ymax: 0.55
 
-# 時序狀態追蹤參數
+# 時序狀態追蹤參數 (空間 IoU 與類別動畫生命週期追蹤)
 tracker:
-  debounce_ms: 80 # 同一軌道判定特效冷卻時間 (毫秒)，防止重複計數
   fps_default: 60
+  dist_match_px: 45.0
+  max_gap_frames: 2
+  conf_thresholds:
+    exact: 0.42
+    near: 0.42
+    break: 0.32
+  class_lifetimes:
+    exact: 16
+    near: 30
+    break: 35
 
 # 輸出設定
 output:

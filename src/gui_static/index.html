@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>In Falsus AI 復盤診斷系統</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=20261120_2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -187,6 +187,7 @@
             <div class="chart-title">
               <span>樂段手感走勢 (Rolling Mean Offset)</span>
               <span class="chart-axis-info">縱軸: 平均偏差 (ms) | 橫軸: 歌曲時間 (秒)</span>
+              <span id="meanLiveBadge" class="chart-live-badge hidden">定位偏差: 0.0 ms</span>
             </div>
             <div class="chart-legend">
               <span class="legend-item"><span class="legend-box perfect-band"></span> ±25ms 大P區間</span>
@@ -197,7 +198,6 @@
           </div>
           <div class="canvas-wrapper" id="meanCanvasWrapper">
             <canvas id="meanChartCanvas"></canvas>
-            <div id="meanCursorValue" class="cursor-value-tooltip hidden">0.0 ms</div>
           </div>
         </div>
 
@@ -212,6 +212,7 @@
             <div class="chart-title">
               <span>各音符打擊偏差散點圖 (Individual Note Timing)</span>
               <span class="chart-axis-info">縱軸: 該音符差幾 ms (-70ms ~ +70ms) | 橫軸: 歌曲時間 (秒)</span>
+              <span id="scatterLiveBadge" class="chart-live-badge hidden">定位音符: --</span>
             </div>
             <div class="chart-legend">
               <span class="legend-item"><span class="legend-dot exact"></span> Exact (大P)</span>
@@ -223,7 +224,6 @@
           </div>
           <div class="canvas-wrapper" id="scatterCanvasWrapper">
             <canvas id="scatterChartCanvas"></canvas>
-            <div id="scatterCursorValue" class="cursor-value-tooltip hidden">0.0 ms</div>
             <div id="noteHoverTooltip" class="note-tooltip hidden"></div>
           </div>
         </div>
@@ -313,6 +313,6 @@
     </main>
   </div>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=20261120_2"></script>
 </body>
 </html>
