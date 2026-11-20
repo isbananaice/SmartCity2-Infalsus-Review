@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>In Falsus AI 復盤診斷系統</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- 最上方選單導覽列 (Top Navigation Header) -->
+  <header class="top-nav">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-text">
+        <span class="brand-title">IN FALSUS</span>
+        <span class="brand-sub">AI REPLAY DIAGNOSTICS</span>
+      </div>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-page="page-analyzer">
+        <span class="icon">📊</span> 復盤分析檢視
+      </button>
+      <button class="nav-tab" data-page="page-files">
+        <span class="icon">📁</span> 檔案與專案管理
+      </button>
+      <button class="nav-tab" data-page="page-system">
+        <span class="icon">⚙️</span> 系統與模型診斷
+      </button>
+    </nav>
+
+    <div class="top-status">
+      <span class="status-badge" id="topGpuBadge">GPU: RTX 3070</span>
+      <span class="status-badge live" id="topModelBadge">YOLOv11s Ultimate (960px)</span>
+    </div>
+  </header>
+
+  <!-- 主佈局容器 (Main Container) -->
+  <div class="app-container">
+    <!-- 左側功能表 (Left Sidebar) -->
+    <aside class="sidebar">
+      <!-- 影片切換與匯入 -->
+      <div class="sidebar-section">
+        <div class="section-header">
+          <span class="section-title">影片復盤切換</span>
+          <span class="badge" id="videoAnalyzedBadge">已載入</span>
+        </div>
+        <select id="videoSelect" class="styled-select">
+          <option value="">載入中...</option>
+        </select>
+
+        <div class="action-buttons">
+          <label class="btn btn-secondary btn-upload" title="選擇外部 MP4 檔案匯入">
+            <span>📥 匯入影片</span>
+            <input type="file" id="videoFileInput" accept=".mp4,.mkv,.avi,.mov" style="display: none;">
+          </label>
+          <button id="btnStartAnalyze" class="btn btn-primary" title="執行 YOLOv11 AI 復盤推論">
+            ⚡ 開始分析
+          </button>
+        </div>
+        <div id="analyzeProgressContainer" class="progress-container hidden">
+          <div class="progress-bar-bg">
+            <div id="analyzeProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+          <span id="analyzeProgressText" class="progress-text">準備中...</span>
+        </div>
+      </div>
+
+      <!-- 快速 KPI 指標面板 -->
+      <div class="sidebar-section">
+        <div class="section-header">
+          <span class="section-title">核心成績指標</span>
+          <span class="note" id="songTimeInfo">00:00</span>
+        </div>
+        
+        <div class="kpi-grid">
+          <div class="kpi-card highlight">
+            <div class="kpi-label">大P達成率 (Perfect)</div>
+            <div class="kpi-value" id="kpiPerfectRate">--%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">總音符數 (Notes)</div>
+            <div class="kpi-value" id="kpiTotalNotes">--</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">平均偏差 (Offset)</div>
+            <div class="kpi-value" id="kpiMeanOffset">-- ms</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">擊打穩定度 (UR)</div>
+            <div class="kpi-value" id="kpiStdOffset">±-- ms</div>
+          </div>
+        </div>
+
+        <!-- 判定細項 -->
+        <div class="judgment-bars">
+          <div class="j-row">
+            <span class="j-tag exact">EXACT (大P)</span>
+            <div class="j-bar-bg"><div class="j-bar-fill exact" id="barExact" style="width: 0%;"></div></div>
+            <span class="j-count" id="countExact">0</span>
+          </div>
+          <div class="j-row">
+            <span class="j-tag near">NEAR (偏誤)</span>
+            <div class="j-bar-bg"><div class="j-bar-fill near" id="barNear" style="width: 0%;"></div></div>
+            <span class="j-count" id="countNear">0</span>
+          </div>
+          <div class="j-row">
+            <span class="j-tag break">BREAK (失誤)</span>
+            <div class="j-bar-bg"><div class="j-bar-fill break" id="barBreak" style="width: 0%;"></div></div>
+            <span class="j-count" id="countBreak">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 軌按鍵分布 -->
+      <div class="sidebar-section">
+        <div class="section-header">
+          <span class="section-title">6 軌道打擊統計</span>
+        </div>
+        <div class="lane-chips" id="laneChips">
+          <div class="lane-chip"><span class="k">Shift</span><span class="v" id="lane1">0</span></div>
+          <div class="lane-chip"><span class="k">A</span><span class="v" id="lane2">0</span></div>
+          <div class="lane-chip"><span class="k">S</span><span class="v" id="lane3">0</span></div>
+          <div class="lane-chip"><span class="k">D</span><span class="v" id="lane4">0</span></div>
+          <div class="lane-chip"><span class="k">F</span><span class="v" id="lane5">0</span></div>
+          <div class="lane-chip"><span class="k">Space</span><span class="v" id="lane6">0</span></div>
+        </div>
+      </div>
+
+      <!-- 快捷工具操作 -->
+      <div class="sidebar-section tools-section">
+        <button id="btnOpenHtmlReport" class="btn btn-outline" style="width: 100%; margin-bottom: 8px;">
+          🌐 開啟獨立 HTML 報告
+        </button>
+        <button id="btnReanalyze" class="btn btn-outline danger" style="width: 100%;">
+          🔄 強制重新分析本曲
+        </button>
+      </div>
+    </aside>
+
+    <!-- 主要內容區 (Main Content Area) -->
+    <main class="main-content">
+      <!-- 頁面 1: 復盤時序檢視 (第一個頁面: 影片 + 中間平均差幾ms + 最下面各音符差幾ms) -->
+      <section id="page-analyzer" class="page-view active">
+        <!-- 1. 最上面: 影片播放器 (Video Player) -->
+        <div class="card video-card">
+          <div class="video-container">
+            <video id="mainVideo" preload="metadata" playsinline></video>
+            <div class="video-watermark" id="videoOverlayInfo">
+              <span id="currentJudgeBadge" class="overlay-badge">準備就緒</span>
+            </div>
+          </div>
+          
+          <!-- 音遊專用客製化播放器控制列 -->
+          <div class="player-controls">
+            <div class="control-row-1">
+              <button id="btnPlayPause" class="btn-ctrl-primary">▶ 播放</button>
+              
+              <div class="step-controls">
+                <button class="btn-step" data-step="-1.0" title="快退 1 秒">-1.0s</button>
+                <button class="btn-step" data-step="-0.1" title="快退 0.1 秒">-0.1s</button>
+                <button class="btn-step" id="btnPrevFrame" title="後退一幀 (1/60s)">◀ 逐格</button>
+                <button class="btn-step" id="btnNextFrame" title="前進一幀 (1/60s)">逐格 ▶</button>
+                <button class="btn-step" data-step="+0.1" title="快進 0.1 秒">+0.1s</button>
+                <button class="btn-step" data-step="+1.0" title="快進 1 秒">+1.0s</button>
+              </div>
+
+              <div class="speed-selector">
+                <label>速度:</label>
+                <button class="btn-speed" data-speed="0.25">0.25x</button>
+                <button class="btn-speed" data-speed="0.5">0.5x</button>
+                <button class="btn-speed" data-speed="0.75">0.75x</button>
+                <button class="btn-speed active" data-speed="1.0">1.0x</button>
+              </div>
+
+              <div class="time-display">
+                <span id="timeCurrent">00:00.00</span> / <span id="timeDuration">00:00.00</span>
+                <span class="song-time-pill" id="timeSong">曲中: 00:00.00</span>
+              </div>
+            </div>
+
+            <!-- 時間軌滑桿 -->
+            <div class="seeker-wrapper">
+              <input type="range" id="videoSeeker" min="0" max="100" step="0.01" value="0" class="styled-seeker">
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 中間: 縱軸為平均差幾 ms，橫軸為時間軸的表格 (Rolling Mean Timing Offset) -->
+        <div class="card chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span class="chart-icon">📈</span>
+              <span>樂段手感走勢 (Rolling Mean Offset)</span>
+              <span class="chart-axis-info">縱軸: 平均偏差 (ms) | 橫軸: 歌曲時間 (秒)</span>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-box perfect-band"></span> ±25ms 大P區間</span>
+              <span class="legend-item"><span class="legend-line center-line"></span> 0ms 完美中心線</span>
+              <span class="legend-item"><span class="legend-line mean-line"></span> 滾動平均偏差趨勢</span>
+              <span class="legend-item"><span class="legend-line cursor-line"></span> 影片定位線</span>
+            </div>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="meanChartCanvas"></canvas>
+            <div id="meanCursorValue" class="cursor-value-tooltip hidden">0.0 ms</div>
+          </div>
+        </div>
+
+        <!-- 3. 最下面: 縱軸為該音符差幾 ms，橫軸為時間軸的表格 (Individual Note Timing Offset Scatter) -->
+        <div class="card chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <span class="chart-icon">🎯</span>
+              <span>各音符打擊偏差散點圖 (Individual Note Timing)</span>
+              <span class="chart-axis-info">縱軸: 該音符差幾 ms (-70ms ~ +70ms) | 橫軸: 歌曲時間 (秒)</span>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-dot exact"></span> Exact (大P)</span>
+              <span class="legend-item"><span class="legend-dot near-early"></span> Near Early (偏快)</span>
+              <span class="legend-item"><span class="legend-dot near-late"></span> Near Late (偏慢)</span>
+              <span class="legend-item"><span class="legend-dot break"></span> Break (失誤)</span>
+              <span class="legend-item"><span class="legend-line cursor-line"></span> 影片定位線</span>
+            </div>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="scatterChartCanvas"></canvas>
+            <div id="scatterCursorValue" class="cursor-value-tooltip hidden">0.0 ms</div>
+            <div id="noteHoverTooltip" class="note-tooltip hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 頁面 2: 檔案與專案管理 (File & Replay Manager) -->
+      <section id="page-files" class="page-view">
+        <div class="card">
+          <div class="card-header-bar">
+            <h2>檔案管理與分析清單</h2>
+            <p>管理所有已收錄的遊玩影片與歷史分析報告</p>
+          </div>
+
+          <table class="data-table" id="filesTable">
+            <thead>
+              <tr>
+                <th>影片檔名</th>
+                <th>檔案大小</th>
+                <th>分析狀態</th>
+                <th>大P達成率</th>
+                <th>總打擊數</th>
+                <th>平均偏差</th>
+                <th>操作動作</th>
+              </tr>
+            </thead>
+            <tbody id="filesTableBody">
+              <tr><td colspan="7" style="text-align: center;">載入檔案列表中...</td></tr>
+            </tbody>
+          </table>
+
+          <div class="drop-zone" id="fileDropZone">
+            <span class="drop-icon">📂</span>
+            <span class="drop-text">將 In Falsus 遊玩錄影拖曳至此處自動匯入</span>
+            <span class="drop-sub">(若該影片已有分析結果，將自動識別並直接套用)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 頁面 3: 系統與模型診斷 (System & Diagnostics) -->
+      <section id="page-system" class="page-view">
+        <div class="card">
+          <div class="card-header-bar">
+            <h2>AI 模型架構與硬體加速狀態</h2>
+            <p>檢視當前 In Falsus 復盤引擎的核心技術參數</p>
+          </div>
+
+          <div class="system-grid">
+            <div class="sys-item">
+              <span class="sys-label">目前使用模型</span>
+              <span class="sys-val" id="sysModelName">YOLOv11s Ultimate</span>
+            </div>
+            <div class="sys-item">
+              <span class="sys-label">模型參數量</span>
+              <span class="sys-val">9,413,961 參數 (9.4M)</span>
+            </div>
+            <div class="sys-item">
+              <span class="sys-label">輸入圖片解析度</span>
+              <span class="sys-val">960 × 960 (小目標文字超高解析)</span>
+            </div>
+            <div class="sys-item">
+              <span class="sys-label">計算硬體裝置</span>
+              <span class="sys-val" id="sysDeviceName">NVIDIA GeForce RTX 3070 8GB</span>
+            </div>
+            <div class="sys-item">
+              <span class="sys-label">推論延遲速度</span>
+              <span class="sys-val">1.7 ms / 幀 (約 588 FPS)</span>
+            </div>
+            <div class="sys-item">
+              <span class="sys-label">大P判定時間窗</span>
+              <span class="sys-val">±25.0 毫秒 (ms)</span>
+            </div>
+            <div class="sys-item">
+              <span class="sys-label">最佳置信度門檻</span>
+              <span class="sys-val">0.55 (F1 最優峰值)</span>
+            </div>
+            <div class="sys-item">
+              <span class="sys-label">6 軌道配置</span>
+              <span class="sys-val">Shift | A | S | D | F | Space</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

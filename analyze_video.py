@@ -102,10 +102,18 @@ def main():
 
     # 3. 初始化 YOLO 偵測器與時序狀態機
     print("\n[階段 2/4] 初始化 YOLOv11 偵測模型與時序狀態機...")
+    model_cfg = config.get("model", {})
+    weights_path = args.weights or model_cfg.get("weights_path", "models/yolov11s_infalsus_ultimate.pt")
+    if not Path(weights_path).exists() and Path("models/yolov11_infalsus_best.pt").exists():
+        weights_path = "models/yolov11_infalsus_best.pt"
+
     detector = InFalsusDetector(
-        weights_path=args.weights,
-        conf_threshold=config.get("model", {}).get("conf_threshold", 0.4),
-        device=config.get("model", {}).get("device", "auto")
+        weights_path=weights_path,
+        conf_threshold=model_cfg.get("conf_threshold", 0.55),
+        iou_threshold=model_cfg.get("iou_threshold", 0.45),
+        device=model_cfg.get("device", "auto"),
+        imgsz=model_cfg.get("input_size", 960),
+        augment=model_cfg.get("augment", False)
     )
     tracker = ReplayTracker(config)
 

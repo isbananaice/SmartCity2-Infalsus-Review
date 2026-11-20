@@ -5,12 +5,13 @@ project:
 
 # 模型設定 (三分類架構: early / perfect / late)
 model:
-  name: "yolov11n"
-  weights_path: "models/yolov11_infalsus_best.pt"
-  conf_threshold: 0.40
+  name: "yolov11s"
+  weights_path: "models/yolov11s_infalsus_ultimate.pt"
+  conf_threshold: 0.55
   iou_threshold: 0.45
   device: "cuda" # 若無 GPU 可設為 "cpu"
-  input_size: 640
+  input_size: 960
+  augment: false # 是否啟用 TTA 測試時增強
 
 # 模型預測類別 (對齊實際視覺標籤)
 classes:

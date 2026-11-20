@@ -84,8 +84,19 @@ def main():
     with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    weights_path = str(ROOT_DIR / "models" / "yolov11_infalsus_best.pt")
-    detector = InFalsusDetector(weights_path=weights_path, conf_threshold=0.40, device="cuda")
+    model_cfg = config.get("model", {})
+    weights_path = str(ROOT_DIR / model_cfg.get("weights_path", "models/yolov11s_infalsus_ultimate.pt"))
+    if not Path(weights_path).exists():
+        weights_path = str(ROOT_DIR / "models" / "yolov11_infalsus_best.pt")
+
+    detector = InFalsusDetector(
+        weights_path=weights_path,
+        conf_threshold=model_cfg.get("conf_threshold", 0.55),
+        iou_threshold=model_cfg.get("iou_threshold", 0.45),
+        device=model_cfg.get("device", "cuda"),
+        imgsz=model_cfg.get("input_size", 960),
+        augment=model_cfg.get("augment", False)
+    )
 
     videos = [
         (ROOT_DIR / "data" / "videos" / "test_01.mp4", "test_01"),
